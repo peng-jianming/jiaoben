@@ -3,9 +3,9 @@ const { fork } = require('child_process');
 const path = require('path');
 const bodyParser = require('body-parser')
 const WebSocket = require('ws');
-const dm = require('./damo.js')
 const server = express();
 const wss = new WebSocket.Server({ port: 8081 });
+const {getList} = require('./touping')
 
 server.use(bodyParser.json());
 server.use(express.static('.')); // 提供静态文件服务
@@ -34,7 +34,7 @@ const dataList = new Map();
 // WebSocket连接处理
 wss.on('connection', (ws) => {
 
-  ws.on('message', (message) => {
+  ws.on('message',async (message) => {
 
     // {
     //   type: 'init', // 类型
@@ -46,12 +46,23 @@ wss.on('connection', (ws) => {
     const result = JSON.parse(message)
 
     if (result.type == 'init') {
-      const deviceList = [
-        { hwnd: 59247500, name: '记事本1' },
-        { hwnd: 9769290, name: '记事本2' },
-      ];
+      
+      // const deviceList = [
+      //   { hwnd: 59247500, name: '记事本1' },
+      //   { hwnd: 9769290, name: '记事本2' },
+      // ];
 
-      // 记录还未记录的设备信息
+
+      let deviceList = await getList()
+      deviceList = JSON.parse(deviceList)
+      deviceList = deviceList.map(item => {
+        return {
+          hwnd: item.deviceId,
+          name: item.name
+        }
+      })
+      
+      // 记录还未记录的设备信息    
       deviceList.forEach(device => {
 
         if (!dataList.has(device.hwnd)) {
@@ -100,6 +111,7 @@ wss.on('connection', (ws) => {
       })
     }
   })
+
 });
 
 function broadcastUpdate() {
