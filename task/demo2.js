@@ -1,5 +1,6 @@
 const Mhxy = require('./index')
 const dm = require('../damo.js')
+
 class Demo2 extends Mhxy {
     constructor(hwnd, changeProp) {
         super(hwnd, changeProp)
@@ -12,6 +13,5 @@ class Demo2 extends Mhxy {
         }
     }
 }
-
 
 module.exports = Demo2

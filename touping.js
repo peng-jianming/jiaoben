@@ -8,12 +8,10 @@ let currentResolve = () => { }
 function connectUpstream() {
     upstreamWS = new WebSocket('ws://127.0.0.1:33332');
 
-    upstreamWS.on('open', () => {
-        console.log('连接上极限投屏了！');
-    });
-
     upstreamWS.on('message', (data) => {
         const res = JSON.parse(data)
+        console.log("极限投屏返回值", res);
+        
         currentResolve(res.result)
     });
 }
@@ -27,6 +25,22 @@ const getList = () => {
     })
 }
 
+const getScreen = (deviceIds) => {
+    return new Promise(resolve => {
+        const data = {
+            "action": "screen",
+            "comm": {
+                "deviceIds": deviceIds,
+                "savePath": __dirname + '/task',
+                "onlyDeviceName": 1
+            }
+        }
+        upstreamWS.send(JSON.stringify(data))
+        currentResolve = resolve
+    })
+}
+
 module.exports = {
-    getList
+    getList,
+    getScreen
 };

@@ -5,7 +5,7 @@ const bodyParser = require('body-parser')
 const WebSocket = require('ws');
 const server = express();
 const wss = new WebSocket.Server({ port: 8081 });
-const {getList} = require('./touping')
+const { getList } = require('./touping')
 
 server.use(bodyParser.json());
 server.use(express.static('.')); // 提供静态文件服务
@@ -34,7 +34,7 @@ const dataList = new Map();
 // WebSocket连接处理
 wss.on('connection', (ws) => {
 
-  ws.on('message',async (message) => {
+  ws.on('message', async (message) => {
 
     // {
     //   type: 'init', // 类型
@@ -46,7 +46,7 @@ wss.on('connection', (ws) => {
     const result = JSON.parse(message)
 
     if (result.type == 'init') {
-      
+
       // const deviceList = [
       //   { hwnd: 59247500, name: '记事本1' },
       //   { hwnd: 9769290, name: '记事本2' },
@@ -61,8 +61,9 @@ wss.on('connection', (ws) => {
           name: item.name
         }
       })
-      
-      // 记录还未记录的设备信息    
+
+      // 记录还未记录的设备信息
+      // 接受子进程的消息
       deviceList.forEach(device => {
 
         if (!dataList.has(device.hwnd)) {
@@ -100,16 +101,17 @@ wss.on('connection', (ws) => {
     if (result.type == 'start') {
       result.data.list.forEach(device => {
         const data = dataList.get(device.hwnd);
-        data.process.send({ type: 'start', data: result.data });
+        data.process.send({ type: 'start', hwnd: device.hwnd, taskConfig: result.data.taskConfig });
       });
     }
 
     if (result.type == 'stop') {
       result.data.list.forEach(device => {
         const data = dataList.get(device.hwnd);
-        data.process.send({ type: 'stop', data: result.data });
+        data.process.send({ type: 'stop', hwnd: device.hwnd });
       })
     }
+
   })
 
 });
@@ -129,7 +131,6 @@ function broadcastUpdate() {
       client.send(message);
     }
   });
-
 }
 
 server.listen(8080, () => {

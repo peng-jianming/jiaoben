@@ -33,7 +33,7 @@ new Vue({
                 type: 'start',
                 data: {
                     list: this.list,
-                    taskConfig: ['demo', 'demo2']
+                    taskConfig: ['demo']
                 }
             }))
         }, 5000);
