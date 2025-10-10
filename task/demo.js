@@ -1,5 +1,4 @@
 const Mhxy = require('./index')
-const dm = require('../damo.js')
 const { getScreen } = require('../touping.js')
 class Demo extends Mhxy {
     constructor(hwnd, changeProp) {

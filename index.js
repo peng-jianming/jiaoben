@@ -36,22 +36,9 @@ wss.on('connection', (ws) => {
 
   ws.on('message', async (message) => {
 
-    // {
-    //   type: 'init', // 类型
-    //   data: { // 数据载体
-    //     list: [], // 操作设备列表
-    //     taskConfig: [] // 任务配置
-    //   }
-    // }
     const result = JSON.parse(message)
 
     if (result.type == 'init') {
-
-      // const deviceList = [
-      //   { hwnd: 59247500, name: '记事本1' },
-      //   { hwnd: 9769290, name: '记事本2' },
-      // ];
-
 
       let deviceList = await getList()
       deviceList = JSON.parse(deviceList)
