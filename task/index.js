@@ -1,6 +1,7 @@
 const dm = require('../damo.js')
 const { Jimp } = require('jimp');
 const cv = require('../opencv.js');
+const path = require('path')
 class Mhxy {
     flag = true
     hwnd = 0
@@ -39,29 +40,87 @@ class Mhxy {
     }
 
     async 二值化() {
-        var jimpSrc = await Jimp.read('./94295493.png');
+        var jimpSrc = await Jimp.read(path.resolve(__dirname, '../resource/cache', `${this.hwnd}.png`));
+
         var src = cv.matFromImageData(jimpSrc.bitmap);
 
         let gray = new cv.Mat();
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-        // let rgba = new cv.Mat();
-        // cv.cvtColor(gray, rgba, cv.COLOR_GRAY2RGBA);
+        let rgba = new cv.Mat();
+        cv.cvtColor(gray, rgba, cv.COLOR_GRAY2RGBA);
 
         new Jimp({
-            width: gray.cols,
-            height: gray.rows,
-            data: Buffer.from(gray.data)
+            width: rgba.cols,
+            height: rgba.rows,
+            data: Buffer.from(rgba.data)
         })
             .write('output.png');
-    
-    
+
+
         src.delete();
         gray.delete();
-        // rgba.delete();
+        rgba.delete();
     }
-    
+
+    async isImageInScreen(aPath, bPath, threshold = 0.8) {
+
+        try {
+            // 使用Jimp加载图像
+            const [aImage, bImage] = await Promise.all([
+                Jimp.read(path.resolve(__dirname, '../resource', `ddd.png`)),
+                Jimp.read(path.resolve(__dirname, '../resource', `ggg.png`))
+            ]);
+
+            const srcMat = cv.matFromImageData(aImage.bitmap);
+            const templMat = cv.matFromImageData(bImage.bitmap);
+
+            // 转换为灰度图
+            const srcGray = new cv.Mat();
+            const templGray = new cv.Mat();
+            cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
+            cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
+
+            // 创建结果矩阵
+            const result = new cv.Mat();
+            const method = cv.TM_CCOEFF_NORMED; // 使用归一化互相关系数方法
+
+            // 执行模板匹配
+            cv.matchTemplate(srcGray, templGray, result, method);
+
+            // 寻找最大匹配值
+            const minMax = cv.minMaxLoc(result);
+            const maxValue = minMax.maxVal;
+            const maxLoc = minMax.maxLoc;
+
+            // 释放内存
+            srcMat.delete();
+            templMat.delete();
+            srcGray.delete();
+            templGray.delete();
+            result.delete();
+
+            const isFound = maxValue >= threshold;
+
+            return {
+                found: isFound,
+                confidence: maxValue,
+                location: isFound ? {
+                    x: maxLoc.x,
+                    y: maxLoc.y,
+                    width: bImage.bitmap.width,
+                    height: bImage.bitmap.height
+                } : null,
+                threshold: threshold
+            };
+        } catch (error) {
+            console.error('图像处理出错:', error);
+            throw error;
+        }
+    }
 }
+
+
 
 
 module.exports = Mhxy

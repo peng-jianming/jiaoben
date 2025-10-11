@@ -1,16 +1,21 @@
 const Mhxy = require('./index')
-const { getScreen } = require('../touping.js')
+const { getScreen, getList } = require('../touping.js')
 class Demo extends Mhxy {
     constructor(hwnd, changeProp) {
         super(hwnd, changeProp)
     }
     async start() {
-        // if (this.bind()) {
-        //     await getScreen(this.hwnd)
-        // }
-        await getScreen(this.hwnd)
-        this.二值化()
+        // await getList()
+        // await getScreen(this.hwnd)
+        console.log(await this.isImageInScreen());
+        
     }
 }
 
-module.exports = Demo
+
+const demo = new Demo('94295493', () => {})
+setTimeout(() => {
+    demo.start()
+}, 1000);
+
+// module.exports = Demo

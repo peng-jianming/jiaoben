@@ -1,9 +1,5 @@
-// const Demo = require('./task/demo')
-// const Demo2 = require('./task/demo2')
-
 const taskConfig = {
     demo: require('./task/demo'),
-    demo2: require('./task/demo2')
 }
 
 let currentTask = null

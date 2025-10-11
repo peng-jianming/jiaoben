@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
-
+const path = require('path');
+const { log } = require('console');
 // 连接到上游 WebSocket 服务（ws://127.0.0.1:33332）
 let upstreamWS = null;
 
@@ -7,6 +8,8 @@ let currentResolve = () => { }
 
 function connectUpstream() {
     upstreamWS = new WebSocket('ws://127.0.0.1:33332');
+
+    
 
     upstreamWS.on('message', (data) => {
         const res = JSON.parse(data)
@@ -26,12 +29,14 @@ const getList = () => {
 }
 
 const getScreen = (deviceIds) => {
+    console.log(path.resolve(__dirname, 'resource/cache'), "===");
+    
     return new Promise(resolve => {
         const data = {
             "action": "screen",
             "comm": {
                 "deviceIds": deviceIds,
-                "savePath": __dirname + '/task',
+                "savePath": path.resolve(__dirname, 'resource/cache'),
                 "onlyDeviceName": 1
             }
         }
