@@ -68,8 +68,8 @@ class Mhxy {
         try {
             // 使用Jimp加载图像
             const [aImage, bImage] = await Promise.all([
-                Jimp.read(path.resolve(__dirname, '../resource', `ddd.png`)),
-                Jimp.read(path.resolve(__dirname, '../resource', `ggg.png`))
+                Jimp.read(path.resolve(__dirname, '../resource', `aaa.bmp`)),
+                Jimp.read(path.resolve(__dirname, '../resource', `123.bmp`))
             ]);
 
             const srcMat = cv.matFromImageData(aImage.bitmap);

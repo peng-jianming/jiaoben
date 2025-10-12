@@ -16,6 +16,6 @@ class Demo extends Mhxy {
 const demo = new Demo('94295493', () => {})
 setTimeout(() => {
     demo.start()
-}, 1000);
+}, 100);
 
 // module.exports = Demo
