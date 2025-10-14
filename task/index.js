@@ -1,5 +1,5 @@
-const dm = require('../damo.js')
-const { Jimp } = require('jimp');
+// const dm = require('../damo.js')
+const Jimp = require('jimp');
 const cv = require('../opencv.js');
 const path = require('path')
 class Mhxy {
@@ -14,20 +14,20 @@ class Mhxy {
     }
     start() { }
 
-    bind() {
-        const res = dm.reg("xf30557fc317f617eead33dfc8de3bdd4ab9043", "x4lpdhpht2zgnl7")
-        if (res == 1) {
-            const res2 = dm.bindWindow(this.hwnd, 'dx2', 'windows', 'windows', 0)
-            if (res2 != 1) {
-                this.changeProp('status', `dm后台绑定失败: ${res}`);
-                return false
-            }
-        } else {
-            this.changeProp('status', `dm注册失败: ${res}`);
-            return false
-        }
-        return true;
-    }
+    // bind() {
+    //     const res = dm.reg("xf30557fc317f617eead33dfc8de3bdd4ab9043", "x4lpdhpht2zgnl7")
+    //     if (res == 1) {
+    //         const res2 = dm.bindWindow(this.hwnd, 'dx2', 'windows', 'windows', 0)
+    //         if (res2 != 1) {
+    //             this.changeProp('status', `dm后台绑定失败: ${res}`);
+    //             return false
+    //         }
+    //     } else {
+    //         this.changeProp('status', `dm注册失败: ${res}`);
+    //         return false
+    //     }
+    //     return true;
+    // }
 
     // time延时, offsetTime上下浮动
     async sleep(time, offsetTime = 2) {
@@ -39,132 +39,234 @@ class Mhxy {
         return new Promise(resolve => setTimeout(resolve, actualSeconds * 1000));
     }
 
-    async isImageInScreen(aPath, bPath, threshold = 0.8) {
+    // async isImageInScreen(aPath, bPath, threshold = 0.8) {
 
-        try {
-            // 使用Jimp加载图像
-            const [aImage, bImage] = await Promise.all([
-                Jimp.read(path.resolve(__dirname, '../resource', `aaa.bmp`)),
-                Jimp.read(path.resolve(__dirname, '../resource', `123.bmp`))
-            ]);
+    //     try {
+    //         // 使用Jimp加载图像
+    //         const [aImage, bImage] = await Promise.all([
+    //             Jimp.read(path.resolve(__dirname, '../resource', `aaa.bmp`)),
+    //             Jimp.read(path.resolve(__dirname, '../resource', `123.bmp`))
+    //         ]);
 
-            const srcMat = cv.matFromImageData(aImage.bitmap);
-            const templMat = cv.matFromImageData(bImage.bitmap);
+    //         const srcMat = cv.matFromImageData(aImage.bitmap);
+    //         const templMat = cv.matFromImageData(bImage.bitmap);
 
-            // 转换为灰度图
-            const srcGray = new cv.Mat();
-            const templGray = new cv.Mat();
-            cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
-            cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
+    //         // 转换为灰度图
+    //         const srcGray = new cv.Mat();
+    //         const templGray = new cv.Mat();
+    //         cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
+    //         cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
 
-            // 创建结果矩阵
-            const result = new cv.Mat();
-            const method = cv.TM_CCOEFF_NORMED; // 使用归一化互相关系数方法
+    //         // 创建结果矩阵
+    //         const result = new cv.Mat();
+    //         const method = cv.TM_CCOEFF_NORMED; // 使用归一化互相关系数方法
 
-            // 执行模板匹配
-            cv.matchTemplate(srcGray, templGray, result, method);
+    //         // 执行模板匹配
+    //         cv.matchTemplate(srcGray, templGray, result, method);
 
-            // 寻找最大匹配值
-            const minMax = cv.minMaxLoc(result);
-            const maxValue = minMax.maxVal;
-            const maxLoc = minMax.maxLoc;
+    //         // 寻找最大匹配值
+    //         const minMax = cv.minMaxLoc(result);
+    //         const maxValue = minMax.maxVal;
+    //         const maxLoc = minMax.maxLoc;
 
-            // 释放内存
-            srcMat.delete();
-            templMat.delete();
-            srcGray.delete();
-            templGray.delete();
-            result.delete();
+    //         // 释放内存
+    //         srcMat.delete();
+    //         templMat.delete();
+    //         srcGray.delete();
+    //         templGray.delete();
+    //         result.delete();
 
-            const isFound = maxValue >= threshold;
+    //         const isFound = maxValue >= threshold;
 
-            return {
-                found: isFound,
-                confidence: maxValue,
-                location: isFound ? {
-                    x: maxLoc.x,
-                    y: maxLoc.y,
-                    width: bImage.bitmap.width,
-                    height: bImage.bitmap.height
-                } : null,
-                threshold: threshold
-            };
-        } catch (error) {
-            console.error('图像处理出错:', error);
-            throw error;
-        }
-    }
+    //         return {
+    //             found: isFound,
+    //             confidence: maxValue,
+    //             location: isFound ? {
+    //                 x: maxLoc.x,
+    //                 y: maxLoc.y,
+    //                 width: bImage.bitmap.width,
+    //                 height: bImage.bitmap.height
+    //             } : null,
+    //             threshold: threshold
+    //         };
+    //     } catch (error) {
+    //         console.error('图像处理出错:', error);
+    //         throw error;
+    //     }
+    // }
 
 
 
-    async isImageInScreen(aPath, bPath, threshold = 0.8) {
-        // bPath为小图,也就是事先准备的模板图
-        // aPath为大图,也就是实时截图
-        try {
-            // 使用Jimp加载图像
-            const [aImage, bImage] = await Promise.all([
-                Jimp.read(path.resolve(__dirname, '../resource', `aaa.bmp`)),
-                Jimp.read(path.resolve(__dirname, '../resource', `123.bmp`))
-            ]);
+    // async isImageInScreen(aPath, bPath, threshold = 0.8) {
+    //     // bPath为小图,也就是事先准备的模板图
+    //     // aPath为大图,也就是实时截图
+    //     try {
+    //         // 使用Jimp加载图像
+    //         const [aImage, bImage] = await Promise.all([
+    //             Jimp.Jimp.read(path.resolve(__dirname, '../resource', `5555.bmp`)),
+    //             Jimp.Jimp.read(path.resolve(__dirname, '../resource', `5555.bmp`))
+    //         ]);
     
-            const srcMat = cv.matFromImageData(aImage.bitmap);
-            const templMat = cv.matFromImageData(bImage.bitmap);
+    //         const srcMat = cv.matFromImageData(aImage.bitmap);
+    //         const templMat = cv.matFromImageData(bImage.bitmap);
     
-            // 转换为灰度图
-            const srcGray = new cv.Mat();
-            const templGray = new cv.Mat();
-            cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
-            cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
+    //         // 转换为灰度图
+    //         const srcGray = new cv.Mat();
+    //         const templGray = new cv.Mat();
+    //         cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
+    //         cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
     
-            // 检查模板图的四个角颜色是否相同，如果相同则创建mask
-            let mask = null;
-            const corners = this.getImageCorners(bImage);
-            const hasTransparentColor = this.hasSameCornerColors(corners);
+    //         // 检查模板图的四个角颜色是否相同，如果相同则创建mask
+    //         let mask = null;
+    //         const corners = this.getImageCorners(bImage);
+    //         const hasTransparentColor = this.hasSameCornerColors(corners);
             
-            if (hasTransparentColor) {
-                const transparentColor = corners[0]; // 任意一个角都可以，因为颜色相同
-                mask = this.createTransparencyMask(templMat, transparentColor);
+    //         if (hasTransparentColor) {
+    //             const transparentColor = corners[0]; // 任意一个角都可以，因为颜色相同
+    //             mask = this.createTransparencyMask(templMat, transparentColor);
+    //         }
+            
+    //         // 创建结果矩阵
+    //         const result = new cv.Mat();
+    //         const method = cv.TM_CCOEFF_NORMED; // 使用归一化互相关系数方法
+    
+    //         // 执行模板匹配（如果有mask则使用mask）
+    //         if (mask) {
+    //             cv.matchTemplate(srcGray, templGray, result, method, mask);
+    //         } else {
+    //             cv.matchTemplate(srcGray, templGray, result, method);
+    //         }
+    
+    //         // 寻找最大匹配值
+    //         const minMax = cv.minMaxLoc(result);
+    //         const maxValue = minMax.maxVal;
+    //         const maxLoc = minMax.maxLoc;
+    
+    //         // 释放内存
+    //         srcMat.delete();
+    //         templMat.delete();
+    //         srcGray.delete();
+    //         templGray.delete();
+    //         result.delete();
+    //         if (mask) {
+    //             mask.delete();
+    //         }
+    
+    //         const isFound = maxValue >= threshold;
+    
+    //         return {
+    //             found: isFound,
+    //             confidence: maxValue,
+    //             location: isFound ? {
+    //                 x: maxLoc.x,
+    //                 y: maxLoc.y,
+    //                 width: bImage.bitmap.width,
+    //                 height: bImage.bitmap.height
+    //             } : null,
+    //             threshold: threshold,
+    //             hasTransparentColor: hasTransparentColor
+    //         };
+    //     } catch (error) {
+    //         console.error('图像处理出错:', error);
+    //         throw error;
+    //     }
+    // }
+
+
+    async isImageInScreen(aPath, bPaths, threshold = 0.8) {
+        // 确保bPaths是数组，如果是单个路径也转换为数组
+        const templatePaths = Array.isArray(bPaths) ? bPaths : [bPaths];
+        
+        try {
+            // 加载大图
+            const aImage = await Jimp.Jimp.read(aPath);
+            const srcMat = cv.matFromImageData(aImage.bitmap);
+            const srcGray = new cv.Mat();
+            cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
+    
+            // 遍历所有模板图片
+            for (let i = 0; i < templatePaths.length; i++) {
+                const bPath = templatePaths[i];
+                let bImage = null;
+                let templMat = null;
+                let templGray = null;
+                let mask = null;
+                
+                try {
+                    // 加载模板图片
+                    bImage = await Jimp.Jimp.read(path.resolve(__dirname, '../resource', bPath));
+                    templMat = cv.matFromImageData(bImage.bitmap);
+                    templGray = new cv.Mat();
+                    cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
+    
+                    // 检查模板图的四个角颜色是否相同，如果相同则创建mask
+                    const corners = this.getImageCorners(bImage);
+                    const hasTransparentColor = this.hasSameCornerColors(corners);
+                    
+                    if (hasTransparentColor) {
+                        const transparentColor = corners[0];
+                        mask = await this.createTransparencyMask(templMat, transparentColor, false);
+                    }
+    
+                    // 创建结果矩阵
+                    const result = new cv.Mat();
+                    const method = cv.TM_CCOEFF_NORMED;
+    
+                    // 执行模板匹配（如果有mask则使用mask）
+                    if (mask) {
+                        cv.matchTemplate(srcGray, templGray, result, method, mask);
+                    } else {
+                        cv.matchTemplate(srcGray, templGray, result, method);
+                    }
+    
+                    // 寻找最大匹配值
+                    const minMax = cv.minMaxLoc(result);
+                    const maxValue = minMax.maxVal;
+                    const maxLoc = minMax.maxLoc;
+    
+                    // 释放当前模板的资源
+                    result.delete();
+                    if (mask) {
+                        mask.delete();
+                    }
+    
+                    // 如果匹配成功，立即返回结果
+                    if (maxValue >= threshold) {
+                        // 释放大图资源
+                        srcMat.delete();
+                        srcGray.delete();
+                        
+                        return {
+                            found: true,
+                            confidence: maxValue,
+                            location: {
+                                x: maxLoc.x,
+                                y: maxLoc.y,
+                                width: bImage.bitmap.width,
+                                height: bImage.bitmap.height
+                            },
+                            index: i, // 匹配到的模板在数组中的索引
+                        };
+                    }
+                } catch (error) {
+                    console.error(`处理模板图片 ${bPath} 时出错:`, error);
+                    // 继续处理下一个模板
+                } finally {
+                    // 确保释放当前模板的资源
+                    if (templMat) templMat.delete();
+                    if (templGray) templGray.delete();
+                }
             }
     
-            // 创建结果矩阵
-            const result = new cv.Mat();
-            const method = cv.TM_CCOEFF_NORMED; // 使用归一化互相关系数方法
-    
-            // 执行模板匹配（如果有mask则使用mask）
-            if (mask) {
-                cv.matchTemplate(srcGray, templGray, result, method, mask);
-            } else {
-                cv.matchTemplate(srcGray, templGray, result, method);
-            }
-    
-            // 寻找最大匹配值
-            const minMax = cv.minMaxLoc(result);
-            const maxValue = minMax.maxVal;
-            const maxLoc = minMax.maxLoc;
-    
-            // 释放内存
+            // 所有模板都没有匹配到，释放大图资源并返回失败
             srcMat.delete();
-            templMat.delete();
             srcGray.delete();
-            templGray.delete();
-            result.delete();
-            if (mask) {
-                mask.delete();
-            }
-    
-            const isFound = maxValue >= threshold;
-    
+            
             return {
-                found: isFound,
-                confidence: maxValue,
-                location: isFound ? {
-                    x: maxLoc.x,
-                    y: maxLoc.y,
-                    width: bImage.bitmap.width,
-                    height: bImage.bitmap.height
-                } : null,
-                threshold: threshold,
-                hasTransparentColor: hasTransparentColor
+                found: false,
+                confidence: 0,
+                location: null,
+                index: -1, // 没有匹配到任何模板
             };
         } catch (error) {
             console.error('图像处理出错:', error);
@@ -231,6 +333,7 @@ class Mhxy {
                 }
             }
         }
+
 
         return mask;
     }
