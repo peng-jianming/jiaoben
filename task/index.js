@@ -104,68 +104,72 @@ class Mhxy {
     }
 
     async findPic(aPath, bPaths, threshold = 0.8) {
-        // 确保bPaths是数组，如果是单个路径也转换为数组
         const templatePaths = Array.isArray(bPaths) ? bPaths : [bPaths];
-
+    
         try {
-            // 加载大图
             const aImage = await Jimp.Jimp.read(aPath);
             const srcMat = cv.matFromImageData(aImage.bitmap);
             const srcGray = new cv.Mat();
             cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
-
-            // 遍历所有模板图片
+    
             for (let i = 0; i < templatePaths.length; i++) {
                 const bPath = templatePaths[i];
                 let bImage = null;
                 let templMat = null;
                 let templGray = null;
                 let mask = null;
-
+    
                 try {
-                    // 加载模板图片
-                    bImage = await Jimp.Jimp.read(path.resolve(__dirname, '../resource', bPath));
+                    bImage = await Jimp.Jimp.read(bPath);
                     templMat = cv.matFromImageData(bImage.bitmap);
                     templGray = new cv.Mat();
                     cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
-
-                    // 检查模板图的四个角颜色是否相同，如果相同则创建mask
+    
+                    // 检查图像尺寸，避免模板图比原图大
+                    if (templGray.rows > srcGray.rows || templGray.cols > srcGray.cols) {
+                        console.warn(`模板图片 ${bPath} 尺寸大于原图，跳过匹配`);
+                        continue;
+                    }
+    
                     const corners = getImageCorners(bImage);
                     const hasTransparentColor = hasSameCornerColors(corners);
-
+    
                     if (hasTransparentColor) {
                         const transparentColor = corners[0];
                         mask = await createTransparencyMask(templMat, transparentColor, false);
                     }
-
-                    // 创建结果矩阵
+    
                     const result = new cv.Mat();
                     const method = cv.TM_CCOEFF_NORMED;
-
-                    // 执行模板匹配（如果有mask则使用mask）
+    
                     if (mask) {
                         cv.matchTemplate(srcGray, templGray, result, method, mask);
                     } else {
                         cv.matchTemplate(srcGray, templGray, result, method);
                     }
-
-                    // 寻找最大匹配值
+    
                     const minMax = cv.minMaxLoc(result);
-                    const maxValue = minMax.maxVal;
-                    const maxLoc = minMax.maxLoc;
-
-                    // 释放当前模板的资源
+                    let maxValue = minMax.maxVal;
+    
+                    // 关键修复：检查并处理异常数值
+                    if (!isFinite(maxValue)) {
+                        console.warn(`检测到异常匹配值: ${maxValue}，将其设置为0`);
+                        maxValue = 0;
+                    }
+    
+                    // 确保匹配值在合理范围内 [0, 1]
+                    maxValue = Math.max(0, Math.min(1, maxValue));
+    
                     result.delete();
                     if (mask) {
                         mask.delete();
                     }
-
-                    // 如果匹配成功，立即返回结果
+                    console.log(maxValue, '000000');
+                    
                     if (maxValue >= threshold) {
-                        // 释放大图资源
                         srcMat.delete();
                         srcGray.delete();
-
+    
                         return {
                             found: true,
                             confidence: maxValue,
@@ -175,28 +179,25 @@ class Mhxy {
                                 width: bImage.bitmap.width,
                                 height: bImage.bitmap.height
                             },
-                            index: i, // 匹配到的模板在数组中的索引
+                            index: i,
                         };
                     }
                 } catch (error) {
                     console.error(`处理模板图片 ${bPath} 时出错:`, error);
-                    // 继续处理下一个模板
                 } finally {
-                    // 确保释放当前模板的资源
                     if (templMat) templMat.delete();
                     if (templGray) templGray.delete();
                 }
             }
-
-            // 所有模板都没有匹配到，释放大图资源并返回失败
+    
             srcMat.delete();
             srcGray.delete();
-
+    
             return {
                 found: false,
                 confidence: 0,
                 location: null,
-                index: -1, // 没有匹配到任何模板
+                index: -1,
             };
         } catch (error) {
             console.error('图像处理出错:', error);

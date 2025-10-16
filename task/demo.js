@@ -1,134 +1,73 @@
 const Mhxy = require('./index')
-// const { getScreen, getList } = require('../touping.js')
-const Jimp = require('jimp');
+const { getScreen, getList } = require('../touping.js')
+const { Jimp } = require('jimp');
 const path = require('path')
+const fs = require('fs');
 class Demo extends Mhxy {
     constructor(hwnd, changeProp) {
         super(hwnd, changeProp)
     }
     async start() {
-        // await getList()
-        // await getScreen(this.hwnd)
-        // console.log(Jimp.Jimp.read(path.resolve(__dirname, '../resource', `aaa.bmp`)), "===");
 
-        console.log(
-            await this.isImageInScreen(
-                path.resolve(__dirname, '../resource', `ccc.png`),
-                [
-                    path.resolve(__dirname, '../resource', `123.bmp`),
-                    path.resolve(__dirname, '../resource', `5555.bmp`),
-                    path.resolve(__dirname, '../resource', `ccc.png`),
-                ]
-            )
-        );
-
+        const url = await getScreen(this.hwnd)
+        console.log(await this.findPic(url, path.resolve(__dirname, '../resource', `888.bmp`)), "====");
+        
     }
 }
 
-
-const demo = new Demo('94295493', () => { })
 setTimeout(() => {
-    demo.start()
+    // convertPngToBmp(path.resolve(__dirname, '../resource', `192_168_31_112_5555.png`))
+    getList().then(item => {
+        const demo = new Demo(item[0].deviceId, () => { })
+        
+
+        setInterval(() => {
+            demo.start()
+        },1000)
+    });
+
 }, 1000);
 
 // module.exports = Demo
 
 
-const arr = [
-    {
-        x:1,
-        y:1,
-        color: '#ffffff'
-    },
-    {
-        x:200,
-        y:200,
-        color: '#ffffff'
-    },
-    {
-        x:900,
-        y:900,
-        color: '#ffffff'
-    },
-]
-
-
 
 /**
- * 使用OpenCV.js进行高效颜色匹配
- * @param {Array} coordArray - 坐标像素数组
- * @param {string|HTMLImageElement} image - 图片路径或图像元素
- * @returns {Promise<boolean>}
+ * 将 PNG 图片转换为 BMP 格式
+ * @param {string} pngPath - PNG 图片的路径
+ * @param {string} bmpPath - 输出 BMP 图片的路径（可选，默认替换原文件扩展名）
+ * @returns {Promise<string>} 返回转换后的 BMP 文件路径
  */
-async function matchCoordinatesColorOpenCV(coordArray, image) {
+const convertPngToBmp = async (pngPath, bmpPath = null) => {
     try {
-        let mat;
-        
-        // 处理不同的输入类型
-        if (typeof image === 'string') {
-            // 从URL加载图片
-            mat = await new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                    const src = cv.imread(img);
-                    resolve(src);
-                };
-                img.onerror = reject;
-                img.src = image;
-            });
-        } else if (image instanceof HTMLImageElement) {
-            mat = cv.imread(image);
-        } else {
-            throw new Error('不支持的图片格式');
+        // 检查输入文件是否存在
+        if (!fs.existsSync(pngPath)) {
+            throw new Error(`PNG 文件不存在: ${pngPath}`);
         }
 
-        // 检查图像尺寸
-        const rows = mat.rows;
-        const cols = mat.cols;
-
-        // 检查所有坐标是否在范围内
-        for (const coord of coordArray) {
-            if (coord.x >= cols || coord.y >= rows || coord.x < 0 || coord.y < 0) {
-                console.warn(`坐标点 (${coord.x}, ${coord.y}) 超出图片范围`);
-                mat.delete();
-                return false;
-            }
+        // 如果没有指定输出路径，则使用原文件名替换扩展名
+        if (!bmpPath) {
+            const ext = path.extname(pngPath);
+            const nameWithoutExt = path.basename(pngPath, ext);
+            const dir = path.dirname(pngPath);
+            bmpPath = path.join(dir, `${nameWithoutExt}.bmp`);
         }
 
-        // 转换为RGBA格式以便处理颜色
-        const rgbaMat = new cv.Mat();
-        cv.cvtColor(mat, rgbaMat, cv.COLOR_BGR2RGBA);
+        console.log(`开始转换: ${pngPath} -> ${bmpPath}`);
 
-        // 检查每个坐标点的颜色
-        for (const coord of coordArray) {
-            const pixel = rgbaMat.ptr(coord.y, coord.x);
-            const r = pixel[0];
-            const g = pixel[1];
-            const b = pixel[2];
-            
-            // 将RGB转换为十六进制
-            const actualColor = '#' + 
-                r.toString(16).padStart(2, '0') +
-                g.toString(16).padStart(2, '0') + 
-                b.toString(16).padStart(2, '0');
+        // 使用 Jimp 读取 PNG 图片
+        const image = await Jimp.read(pngPath);
 
-            // 比较颜色（忽略大小写）
-            if (actualColor.toLowerCase() !== coord.color.toLowerCase()) {
-                console.log(`坐标 (${coord.x}, ${coord.y}) 颜色不匹配: 期望 ${coord.color}, 实际 ${actualColor}`);
-                mat.delete();
-                rgbaMat.delete();
-                return false;
-            }
-        }
+        // 转换为 BMP 格式并保存
+        await image.write(bmpPath);
 
-        // 释放内存
-        mat.delete();
-        rgbaMat.delete();
-        
-        return true;
+        console.log(`转换完成: ${bmpPath}`);
+        return bmpPath;
 
     } catch (error) {
-        console.error('OpenCV处理错误:', error);
-        return false;
+        console.error('PNG 转 BMP 转换失败:', error.message);
+        throw error;
     }
 }
+
+
