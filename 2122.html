@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端计算机视觉：OpenCV.js 图像处理演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script async src="./opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <style>
+        .canvas-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        canvas {
+            border: 1px solid #ccc;
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .processing-btn {
+            margin: 5px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .processing-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .processing-btn.active {
+            background: #28a745;
+        }
+
+        .processing-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .video-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        video,
+        canvas {
+            border: 1px solid #ccc;
+            max-width: 100%;
+        }
+
+        .slider-container {
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #e9ecef;
+            outline: none;
+        }
+
+        .feature-point {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .feature-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-processing {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-success {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .sift-controls {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .match-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">
+            <i class="fas fa-eye mr-2"></i>前端计算机视觉：OpenCV.js 图像处理演示
+        </h1>
+
+        <div id="status" class="text-center mb-4 p-4 bg-blue-100 text-blue-800 rounded">
+            正在加载 OpenCV.js...
+        </div>
+
+        <!-- 标签页导航 -->
+        <div class="tab-container">
+            <div class="tab active" onclick="switchTab('image-processing')">图像处理</div>
+            <div class="tab" onclick="switchTab('video-processing')">实时视频处理</div>
+        </div>
+
+        <!-- 图像处理部分 -->
+        <div id="image-processing" class="tab-content active bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                <i class="fas fa-image mr-2"></i>图像处理
+            </h2>
+
+            <div class="mb-4">
+                <input type="file" id="imageInput" accept="image/*"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <div class="control-panel">
+                <h3 class="text-lg font-semibold mb-3">处理选项</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button class="processing-btn" onclick="convertToGray()">灰度转换</button>
+                    <button class="processing-btn" onclick="applyCanny()">Canny边缘检测</button>
+                    <button class="processing-btn" onclick="applySobel()">Sobel边缘检测</button>
+                    <button class="processing-btn" onclick="applyThreshold()">阈值分割</button>
+                    <button class="processing-btn" onclick="applyBinaryThreshold()">二值化(OTSU)</button>
+                    <button class="processing-btn" onclick="detectContours()">轮廓检测</button>
+                    <button class="processing-btn" onclick="detectSIFT()">SIFT特征检测</button>
+                    <button class="processing-btn" onclick="resetImage()">重置图像</button>
+                </div>
+
+                <!-- 二值化阈值控制面板 -->
+                <div id="threshold-control" class="slider-container">
+                    <div class="slider-label">
+                        <span>二值化阈值</span>
+                        <span id="threshold-value" class="slider-value">127</span>
+                    </div>
+                    <input type="range" id="threshold-slider" min="0" max="255" value="127" oninput="updateThresholdValue(this.value)">
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0</span>
+                        <span>255</span>
+                    </div>
+                    <button class="processing-btn mt-2" onclick="applyManualThreshold()">应用手动二值化</button>
+                </div>
+                
+                <!-- SIFT模板匹配控制面板 -->
+                <div class="sift-controls">
+                    <h4 class="font-semibold mb-2">SIFT模板匹配</h4>
+                    <div class="mb-2">
+                        <input type="file" id="templateInput" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                    </div>
+                    <button class="processing-btn" onclick="matchSIFT()">执行模板匹配</button>
+                    <div id="match-info" class="match-info">
+                        <!-- 匹配结果将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container mt-4">
+                <div>
+                    <p class="text-center font-semibold mb-2">原始图像</p>
+                    <canvas id="inputCanvas"></canvas>
+                </div>
+                <div>
+                    <p class="text-center font-semibold mb-2">处理后图像</p>
+                    <div class="feature-container">
+                        <canvas id="outputCanvas"></canvas>
+                    </div>
+                </div>
+                <div id="template-container" style="display: none;">
+                    <p class="text-center font-semibold mb-2">模板图像</p>
+                    <canvas id="templateCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实时视频处理部分 -->
+        <div id="video-processing" class="tab-content bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                <i class="fas fa-video mr-2"></i>实时视频处理
+            </h2>
+
+            <div class="control-panel">
+                <button id="startVideoBtn" class="processing-btn" onclick="startVideo()">
+                    <i class="fas fa-play mr-1"></i>开始摄像头
+                </button>
+                <button id="stopVideoBtn" class="processing-btn" disabled onclick="stopVideo()">
+                    <i class="fas fa-stop mr-1"></i>停止处理
+                </button>
+                <button id="faceDetectBtn" class="processing-btn" onclick="toggleFaceDetection()">
+                    <i class="fas fa-user mr-1"></i>人脸检测
+                </button>
+            </div>
+
+            <div class="video-container mt-4">
+                <div>
+                    <p class="text-center font-semibold mb-2">原始视频</p>
+                    <video id="inputVideo" autoplay muted playsinline></video>
+                </div>
+                <div>
+                    <p class="text-center font-semibold mb-2">处理后视频</p>
+                    <canvas id="videoOutputCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let src, dst, currentProcessed, originalSrc;
+        let inputCanvas, outputCanvas, templateCanvas;
+        let video, videoOutputCanvas, videoContext;
+        let processing = false;
+        let requestId;
+        let faceCascade;
+        let faceDetectionEnabled = false;
+        let videoSrc, videoDst, videoGray;
+        let thresholdValue = 127;
+        let siftDetector;
+        let templateImage = null;
+        let templateKeypoints, templateDescriptors;
+
+        function onOpenCvReady() {
+            document.getElementById('status').innerHTML = 'OpenCV.js 已加载完成 ✓';
+            document.getElementById('status').classList.remove('bg-blue-100', 'text-blue-800');
+            document.getElementById('status').classList.add('status-success');
+            initializeElements();
+            setupImageInput();
+            setupTemplateInput();
+            // loadFaceDetectionModel();
+        }
+
+        function initializeElements() {
+            inputCanvas = document.getElementById('inputCanvas');
+            outputCanvas = document.getElementById('outputCanvas');
+            templateCanvas = document.getElementById('templateCanvas');
+            video = document.getElementById('inputVideo');
+            videoOutputCanvas = document.getElementById('videoOutputCanvas');
+            videoContext = videoOutputCanvas.getContext('2d');
+        }
+
+        function setupImageInput() {
+            const imageInput = document.getElementById('imageInput');
+            imageInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const img = new Image();
+                        img.onload = function () {
+                            loadImageToCanvas(img);
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function setupTemplateInput() {
+            const templateInput = document.getElementById('templateInput');
+            templateInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const img = new Image();
+                        img.onload = function () {
+                            loadTemplateImage(img);
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function loadImageToCanvas(img) {
+            inputCanvas.width = img.width;
+            inputCanvas.height = img.height;
+            outputCanvas.width = img.width;
+            outputCanvas.height = img.height;
+
+            src = cv.imread(img);
+            originalSrc = src.clone();
+            currentProcessed = src.clone();
+            dst = new cv.Mat();
+
+            cv.imshow(inputCanvas, src);
+            src.copyTo(dst);
+            cv.imshow(outputCanvas, dst);
+        }
+
+        function loadTemplateImage(img) {
+            templateCanvas.width = img.width;
+            templateCanvas.height = img.height;
+            templateImage = cv.imread(img);
+            cv.imshow(templateCanvas, templateImage);
+            document.getElementById('template-container').style.display = 'block';
+            
+            // 预计算模板图像的特征
+            computeTemplateFeatures();
+        }
+
+        function computeTemplateFeatures() {
+            if (!templateImage) return;
+            
+            document.getElementById('status').innerHTML = '正在计算模板图像特征...';
+            document.getElementById('status').classList.remove('status-success');
+            document.getElementById('status').classList.add('status-processing');
+            
+            setTimeout(() => {
+                try {
+                    // 创建SIFT检测器
+                    siftDetector = new cv.SIFT();
+                    
+                    // 转换为灰度图像
+                    let gray = new cv.Mat();
+                    cv.cvtColor(templateImage, gray, cv.COLOR_RGB2GRAY);
+                    
+                    // 检测关键点和计算描述符
+                    templateKeypoints = new cv.KeyPointVector();
+                    templateDescriptors = new cv.Mat();
+                    siftDetector.detectAndCompute(gray, new cv.Mat(), templateKeypoints, templateDescriptors);
+                    
+                    // 清理内存
+                    gray.delete();
+                    
+                    document.getElementById('status').innerHTML = `模板特征计算完成，找到 ${templateKeypoints.size()} 个特征点 ✓`;
+                    document.getElementById('status').classList.remove('status-processing');
+                    document.getElementById('status').classList.add('status-success');
+                } catch (error) {
+                    console.error('模板特征计算错误:', error);
+                    document.getElementById('status').innerHTML = '模板特征计算失败';
+                    document.getElementById('status').classList.remove('status-processing');
+                    document.getElementById('status').classList.add('status-error');
+                }
+            }, 100);
+        }
+
+        // 标签页切换功能
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有标签的激活状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签内容
+            document.getElementById(tabName).classList.add('active');
+            
+            // 激活选中的标签
+            event.target.classList.add('active');
+        }
+
+        // 更新阈值显示
+        function updateThresholdValue(value) {
+            thresholdValue = parseInt(value);
+            document.getElementById('threshold-value').textContent = value;
+        }
+
+        // 统一的处理函数，确保每个功能都在当前处理结果上进行
+        function applyProcessing(processingFunction) {
+            if (!currentProcessed) {
+                alert('请先上传图像');
+                return;
+            }
+            
+            // 使用当前处理结果作为输入
+            processingFunction(currentProcessed, dst);
+            
+            // 将处理结果复制到currentProcessed，以便下一次处理
+            dst.copyTo(currentProcessed);
+            
+            // 显示处理后的图像
+            cv.imshow(outputCanvas, currentProcessed);
+        }
+
+        function convertToGray() {
+            applyProcessing((input, output) => {
+                cv.cvtColor(input, output, cv.COLOR_RGB2GRAY);
+                cv.cvtColor(output, output, cv.COLOR_GRAY2RGB);
+            });
+        }
+
+        function applyCanny() {
+            applyProcessing((input, output) => {
+                let gray = new cv.Mat();
+                cv.cvtColor(input, gray, cv.COLOR_RGB2GRAY);
+                cv.Canny(gray, output, 100, 200, 3, false);
+                cv.cvtColor(output, output, cv.COLOR_GRAY2RGB);
+                gray.delete();
+            });
+        }
+
+        function applySobel() {
+            applyProcessing((input, output) => {
+                let gray = new cv.Mat();
+                let sobelx = new cv.Mat();
+                let sobely = new cv.Mat();
+                let abs_sobelx = new cv.Mat();
+                let abs_sobely = new cv.Mat();
+
+                cv.cvtColor(input, gray, cv.COLOR_RGB2GRAY);
+                cv.Sobel(gray, sobelx, cv.CV_16S, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+                cv.Sobel(gray, sobely, cv.CV_16S, 0, 1, 3, 1, 0, cv.BORDER_DEFAULT);
+                cv.convertScaleAbs(sobelx, abs_sobelx);
+                cv.convertScaleAbs(sobely, abs_sobely);
+                cv.addWeighted(abs_sobelx, 0.5, abs_sobely, 0.5, 0, output);
+                cv.cvtColor(output, output, cv.COLOR_GRAY2RGB);
+
+                gray.delete(); sobelx.delete(); sobely.delete();
+                abs_sobelx.delete(); abs_sobely.delete();
+            });
+        }
+
+        function applyThreshold() {
+            applyProcessing((input, output) => {
+                let gray = new cv.Mat();
+                cv.cvtColor(input, gray, cv.COLOR_RGB2GRAY);
+                cv.threshold(gray, output, 127, 255, cv.THRESH_BINARY);
+                cv.cvtColor(output, output, cv.COLOR_GRAY2RGB);
+                gray.delete();
+            });
+        }
+
+        // 新增的二值化功能（OTSU方法）
+        function applyBinaryThreshold() {
+            applyProcessing((input, output) => {
+                let gray = new cv.Mat();
+                cv.cvtColor(input, gray, cv.COLOR_RGB2GRAY);
+                // 使用OTSU方法自动计算阈值
+                cv.threshold(gray, output, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+                cv.cvtColor(output, output, cv.COLOR_GRAY2RGB);
+                gray.delete();
+            });
+        }
+
+        // 手动调整阈值的二值化
+        function applyManualThreshold() {
+            applyProcessing((input, output) => {
+                let gray = new cv.Mat();
+                cv.cvtColor(input, gray, cv.COLOR_RGB2GRAY);
+                cv.threshold(gray, output, thresholdValue, 255, cv.THRESH_BINARY);
+                cv.cvtColor(output, output, cv.COLOR_GRAY2RGB);
+                gray.delete();
+            });
+        }
+
+        function detectContours() {
+            applyProcessing((input, output) => {
+                let gray = new cv.Mat();
+                let thresh = new cv.Mat();
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+
+                cv.cvtColor(input, gray, cv.COLOR_RGB2GRAY);
+                cv.threshold(gray, thresh, 127, 255, cv.THRESH_BINARY);
+                cv.findContours(thresh, contours, hierarchy, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE);
+
+                input.copyTo(output);
+                for (let i = 0; i < contours.size(); i++) {
+                    let color = new cv.Scalar(Math.random() * 255, Math.random() * 255, Math.random() * 255);
+                    cv.drawContours(output, contours, i, color, 2);
+                }
+
+                gray.delete(); thresh.delete(); contours.delete(); hierarchy.delete();
+            });
+        }
+
+        // SIFT特征检测功能
+        function detectSIFT() {
+            if (!currentProcessed) {
+                alert('请先上传图像');
+                return;
+            }
+            
+            // 更新状态为处理中
+            document.getElementById('status').innerHTML = '正在检测SIFT特征点...';
+            document.getElementById('status').classList.remove('status-success');
+            document.getElementById('status').classList.add('status-processing');
+            
+            // 使用setTimeout让UI有机会更新
+            setTimeout(() => {
+                try {
+                    // 创建SIFT检测器
+                    siftDetector = new cv.SIFT();
+                    
+                    // 转换为灰度图像
+                    let gray = new cv.Mat();
+                    cv.cvtColor(currentProcessed, gray, cv.COLOR_RGB2GRAY);
+                    
+                    // 检测关键点和计算描述符
+                    let keypoints = new cv.KeyPointVector();
+                    let descriptors = new cv.Mat();
+                    siftDetector.detect(gray, keypoints);
+                    
+                    // 在图像上绘制关键点
+                    let outputImage = currentProcessed.clone();
+                    cv.drawKeypoints(currentProcessed, keypoints, outputImage, new cv.Scalar(0, 255, 0, 255), 
+                                    cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS);
+                    
+                    // 显示结果
+                    cv.imshow(outputCanvas, outputImage);
+                    
+                    // 更新当前处理结果
+                    outputImage.copyTo(currentProcessed);
+                    
+                    // 清理内存
+                    gray.delete();
+                    keypoints.delete();
+                    descriptors.delete();
+                    
+                    // 恢复状态
+                    document.getElementById('status').innerHTML = 'SIFT特征检测完成 ✓';
+                    document.getElementById('status').classList.remove('status-processing');
+                    document.getElementById('status').classList.add('status-success');
+                    
+                    console.log(`检测到 ${keypoints.size()} 个特征点`);
+                } catch (error) {
+                    console.error('SIFT检测错误:', error);
+                    document.getElementById('status').innerHTML = 'SIFT检测失败，请尝试其他功能';
+                    document.getElementById('status').classList.remove('status-processing');
+                    document.getElementById('status').classList.add('status-error');
+                }
+            }, 100);
+        }
+
+        // SIFT模板匹配功能
+        function matchSIFT() {
+            if (!currentProcessed || !templateImage || !templateKeypoints) {
+                alert('请先上传主图像和模板图像');
+                return;
+            }
+            
+            document.getElementById('status').innerHTML = '正在执行SIFT模板匹配...';
+            document.getElementById('status').classList.remove('status-success');
+            document.getElementById('status').classList.add('status-processing');
+            
+            setTimeout(() => {
+                try {
+                    // 创建SIFT检测器
+                    siftDetector = new cv.SIFT();
+                    
+                    // 转换主图像为灰度
+                    let srcGray = new cv.Mat();
+                    cv.cvtColor(currentProcessed, srcGray, cv.COLOR_RGB2GRAY);
+                    
+                    // 检测主图像的关键点和描述符
+                    let srcKeypoints = new cv.KeyPointVector();
+                    let srcDescriptors = new cv.Mat();
+                    siftDetector.detectAndCompute(srcGray, new cv.Mat(), srcKeypoints, srcDescriptors);
+                    
+                    // 创建特征匹配器
+                    let matcher = new cv.BFMatcher();
+                    let matches = new cv.DMatchVector();
+                    
+                    // 进行特征匹配
+                    matcher.match(templateDescriptors, srcDescriptors, matches);
+                    
+                    // 计算最小和最大距离
+                    let minDistance = 1000;
+                    let maxDistance = 0;
+                    for (let i = 0; i < matches.size(); i++) {
+                        let distance = matches.get(i).distance;
+                        if (distance < minDistance) minDistance = distance;
+                        if (distance > maxDistance) maxDistance = distance;
+                    }
+                    
+                    // 筛选好的匹配点（距离小于2倍最小距离）
+                    let goodMatches = new cv.DMatchVector();
+                    for (let i = 0; i < matches.size(); i++) {
+                        if (matches.get(i).distance <= Math.max(2 * minDistance, 0.02)) {
+                            goodMatches.push_back(matches.get(i));
+                        }
+                    }
+                    
+                    // 绘制匹配结果
+                    let matchImage = new cv.Mat();
+                    cv.drawMatches(
+                        templateImage, templateKeypoints, 
+                        currentProcessed, srcKeypoints, 
+                        goodMatches, matchImage,
+                        new cv.Scalar(255, 0, 0), new cv.Scalar(0, 255, 0),
+                        new cv.Mat(), cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
+                    );
+                    
+                    // 显示匹配结果
+                    cv.imshow(outputCanvas, matchImage);
+                    
+                    // 更新当前处理结果
+                    matchImage.copyTo(currentProcessed);
+                    
+                    // 显示匹配信息
+                    let matchInfo = document.getElementById('match-info');
+                    matchInfo.style.display = 'block';
+                    matchInfo.innerHTML = `
+                        <p><strong>匹配结果:</strong> ${goodMatches.size()} / ${matches.size()} 个良好匹配</p>
+                        <p><strong>匹配率:</strong> ${(goodMatches.size() / matches.size() * 100).toFixed(2)}%</p>
+                    `;
+                    
+                    // 清理内存
+                    srcGray.delete();
+                    srcKeypoints.delete();
+                    srcDescriptors.delete();
+                    matches.delete();
+                    goodMatches.delete();
+                    matcher.delete();
+                    
+                    // 恢复状态
+                    document.getElementById('status').innerHTML = 'SIFT模板匹配完成 ✓';
+                    document.getElementById('status').classList.remove('status-processing');
+                    document.getElementById('status').classList.add('status-success');
+                    
+                } catch (error) {
+                    console.error('SIFT匹配错误:', error);
+                    document.getElementById('status').innerHTML = 'SIFT匹配失败';
+                    document.getElementById('status').classList.remove('status-processing');
+                    document.getElementById('status').classList.add('status-error');
+                }
+            }, 100);
+        }
+
+        function resetImage() {
+            if (!originalSrc) return;
+            if (currentProcessed) currentProcessed.delete();
+            currentProcessed = originalSrc.clone();
+            cv.imshow(outputCanvas, currentProcessed);
+            document.getElementById('match-info').style.display = 'none';
+        }
+
+        // 视频处理功能
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.onloadedmetadata = function (e) {
+                        video.play();
+                        startVideoProcessing();
+                    };
+                })
+                .catch(function (err) {
+                    console.error('摄像头访问错误: ' + err);
+                    document.getElementById('status').innerHTML = '无法访问摄像头';
+                    document.getElementById('status').classList.remove('status-success');
+                    document.getElementById('status').classList.add('status-error');
+                });
+        }
+
+        function startVideoProcessing() {
+            if (processing) return;
+
+            videoOutputCanvas.width = video.videoWidth;
+            videoOutputCanvas.height = video.videoHeight;
+
+            videoSrc = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+            videoDst = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
+            videoGray = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
+
+            processing = true;
+            document.getElementById('startVideoBtn').disabled = true;
+            document.getElementById('stopVideoBtn').disabled = false;
+
+            processVideoFrame();
+        }
+
+        function stopVideo() {
+            if (!processing) return;
+            processing = false;
+
+            document.getElementById('startVideoBtn').disabled = false;
+            document.getElementById('stopVideoBtn').disabled = true;
+
+            if (videoSrc) videoSrc.delete();
+            if (videoDst) videoDst.delete();
+            if (videoGray) videoGray.delete();
+
+            if (requestId) {
+                cancelAnimationFrame(requestId);
+            }
+
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        function processVideoFrame() {
+            if (!processing) return;
+
+            try {
+                cv.imread(video, videoSrc);
+
+                if (faceDetectionEnabled && faceCascade) {
+                    processWithFaceDetection();
+                } else {
+                    // 默认处理：灰度转换
+                    cv.cvtColor(videoSrc, videoGray, cv.COLOR_RGBA2GRAY);
+                    cv.cvtColor(videoGray, videoDst, cv.COLOR_GRAY2RGBA);
+                }
+
+                cv.imshow(videoOutputCanvas, videoDst);
+                requestId = requestAnimationFrame(processVideoFrame);
+            } catch (err) {
+                console.error('处理视频帧时出错:', err);
+                stopVideo();
+            }
+        }
+
+        function processWithFaceDetection() {
+            cv.cvtColor(videoSrc, videoGray, cv.COLOR_RGBA2GRAY);
+            let faces = new cv.RectVector();
+            faceCascade.detectMultiScale(videoGray, faces, 1.1, 3, 0, new cv.Size(30, 30));
+
+            videoSrc.copyTo(videoDst);
+            for (let i = 0; i < faces.size(); i++) {
+                let face = faces.get(i);
+                let point1 = new cv.Point(face.x, face.y);
+                let point2 = new cv.Point(face.x + face.width, face.y + face.height);
+                cv.rectangle(videoDst, point1, point2, [255, 0, 0, 255], 2);
+            }
+            faces.delete();
+        }
+
+        function toggleFaceDetection() {
+            faceDetectionEnabled = !faceDetectionEnabled;
+            const btn = document.getElementById('faceDetectBtn');
+            if (faceDetectionEnabled) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-user mr-1"></i>关闭人脸检测';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fas fa-user mr-1"></i>人脸检测';
+            }
+        }
+
+        function loadFaceDetectionModel() {
+            // 由于模型文件较大，这里简化处理
+            // 实际应用中需要加载haarcascade_frontalface_default.xml
+            console.log('人脸检测模型加载功能已准备（需要实际模型文件）');
+        }
+
+        // 清理资源
+        window.addEventListener('beforeunload', function () {
+            if (src) src.delete();
+            if (dst) dst.delete();
+            if (originalSrc) originalSrc.delete();
+            if (currentProcessed) currentProcessed.delete();
+            if (videoSrc) videoSrc.delete();
+            if (videoDst) videoDst.delete();
+            if (videoGray) videoGray.delete();
+            if (siftDetector) siftDetector.delete();
+            if (templateImage) templateImage.delete();
+            if (templateKeypoints) templateKeypoints.delete();
+            if (templateDescriptors) templateDescriptors.delete();
+        });
+    </script>
+</body>
+
+</html>

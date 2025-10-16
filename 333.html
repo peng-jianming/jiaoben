@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV.js 图形检测 - 逐步处理</title>
+    <style>
+        :root {
+            --primary-color: #6a1b9a;
+            --secondary-color: #9575cd;
+            --light-color: #f3e5f5;
+            --dark-color: #4a148c;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #666;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .upload-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .upload-box {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .upload-box h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--secondary-color);
+            background-color: var(--light-color);
+        }
+        
+        .upload-area.active {
+            border-color: var(--primary-color);
+            background-color: var(--light-color);
+        }
+        
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .preview-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .preview-box h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: var(--dark-color);
+        }
+        
+        canvas {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        
+        .processing-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .processing-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .step {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .step-header {
+            background-color: var(--light-color);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .step-header h3 {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+        
+        .step-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+        
+        .step-content.active {
+            padding: 20px;
+            max-height: 1000px;
+        }
+        
+        .step-description {
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        .step-canvases {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .step-canvas-container {
+            text-align: center;
+        }
+        
+        .step-canvas-container h4 {
+            margin-bottom: 8px;
+            color: var(--dark-color);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--dark-color);
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .result-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .result-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .result-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .result-box {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .result-box h3 {
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+        
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .status.processing {
+            background-color: #fff9c4;
+            color: #f57f17;
+        }
+        
+        .status.success {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .status.error {
+            background-color: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .upload-section {
+                flex-direction: column;
+            }
+            
+            .preview-container {
+                flex-direction: column;
+            }
+            
+            .step-canvases {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenCV.js 图形检测 - 逐步处理</h1>
+            <p class="description">上传模板图像和测试图像，然后逐步执行颜色分割和形状匹配算法，了解每个步骤的作用。</p>
+        </header>
+        
+        <div class="upload-section">
+            <div class="upload-box">
+                <h2>模板图像</h2>
+                <div class="upload-area" id="templateUploadArea">
+                    <p>点击或拖放模板图像到这里</p>
+                    <input type="file" id="templateInput" accept="image/*" style="display: none;">
+                </div>
+                <div class="preview-container">
+                    <div class="preview-box">
+                        <h3>模板预览</h3>
+                        <canvas id="templateCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="upload-box">
+                <h2>测试图像</h2>
+                <div class="upload-area" id="testUploadArea">
+                    <p>点击或拖放测试图像到这里</p>
+                    <input type="file" id="testInput" accept="image/*" style="display: none;">
+                </div>
+                <div class="preview-container">
+                    <div class="preview-box">
+                        <h3>测试预览</h3>
+                        <canvas id="testCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="processing-section hidden" id="processingSection">
+            <h2>处理步骤</h2>
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-header" onclick="toggleStep(1)">
+                        <h3>步骤 1: 转换到HSV颜色空间</h3>
+                        <span>▶</span>
+                    </div>
+                    <div class="step-content" id="step1Content">
+                        <p class="step-description">将图像从RGB颜色空间转换到HSV颜色空间，HSV对颜色感知更直观，更容易提取特定颜色范围。</p>
+                        <div class="step-canvases">
+                            <div class="step-canvas-container">
+                                <h4>原图</h4>
+                                <canvas id="step1Original"></canvas>
+                            </div>
+                            <div class="step-canvas-container">
+                                <h4>HSV图像</h4>
+                                <canvas id="step1HSV"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-header" onclick="toggleStep(2)">
+                        <h3>步骤 2: 颜色分割（提取紫色区域）</h3>
+                        <span>▶</span>
+                    </div>
+                    <div class="step-content" id="step2Content">
+                        <p class="step-description">在HSV颜色空间中定义紫色的范围，创建掩码提取紫色区域。考虑到透明度，适当调整颜色范围。</p>
+                        <div class="step-canvases">
+                            <div class="step-canvas-container">
+                                <h4>HSV图像</h4>
+                                <canvas id="step2HSV"></canvas>
+                            </div>
+                            <div class="step-canvas-container">
+                                <h4>颜色掩码</h4>
+                                <canvas id="step2Mask"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-header" onclick="toggleStep(3)">
+                        <h3>步骤 3: 形态学操作</h3>
+                        <span>▶</span>
+                    </div>
+                    <div class="step-content" id="step3Content">
+                        <p class="step-description">应用形态学操作（开运算和闭运算）来优化掩码，去除噪声并连接相邻的区域。</p>
+                        <div class="step-canvases">
+                            <div class="step-canvas-container">
+                                <h4>原始掩码</h4>
+                                <canvas id="step3OriginalMask"></canvas>
+                            </div>
+                            <div class="step-canvas-container">
+                                <h4>优化后掩码</h4>
+                                <canvas id="step3ImprovedMask"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-header" onclick="toggleStep(4)">
+                        <h3>步骤 4: 查找轮廓</h3>
+                        <span>▶</span>
+                    </div>
+                    <div class="step-content" id="step4Content">
+                        <p class="step-description">在优化后的掩码中查找所有轮廓，这些轮廓代表可能的图形区域。</p>
+                        <div class="step-canvases">
+                            <div class="step-canvas-container">
+                                <h4>优化掩码</h4>
+                                <canvas id="step4Mask"></canvas>
+                            </div>
+                            <div class="step-canvas-container">
+                                <h4>检测到的轮廓</h4>
+                                <canvas id="step4Contours"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-header" onclick="toggleStep(5)">
+                        <h3>步骤 5: 轮廓筛选</h3>
+                        <span>▶</span>
+                    </div>
+                    <div class="step-content" id="step5Content">
+                        <p class="step-description">根据面积、长宽比等几何特征筛选轮廓，排除不符合条件的区域。</p>
+                        <div class="step-canvases">
+                            <div class="step-canvas-container">
+                                <h4>所有轮廓</h4>
+                                <canvas id="step5AllContours"></canvas>
+                            </div>
+                            <div class="step-canvas-container">
+                                <h4>筛选后轮廓</h4>
+                                <canvas id="step5FilteredContours"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-header" onclick="toggleStep(6)">
+                        <h3>步骤 6: 形状匹配</h3>
+                        <span>▶</span>
+                    </div>
+                    <div class="step-content" id="step6Content">
+                        <p class="step-description">将测试图像中的轮廓与模板轮廓进行形状匹配，计算相似度得分。</p>
+                        <div class="step-canvases">
+                            <div class="step-canvas-container">
+                                <h4>模板轮廓</h4>
+                                <canvas id="step6Template"></canvas>
+                            </div>
+                            <div class="step-canvas-container">
+                                <h4>匹配结果</h4>
+                                <canvas id="step6Matching"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="prevStep" disabled>上一步</button>
+                <button id="nextStep">下一步</button>
+                <button id="runAll">运行所有步骤</button>
+            </div>
+        </div>
+        
+        <div class="result-section hidden" id="resultSection">
+            <h2>检测结果</h2>
+            <div class="result-content">
+                <div class="result-box">
+                    <h3>模板图像</h3>
+                    <canvas id="resultTemplate"></canvas>
+                </div>
+                <div class="result-box">
+                    <h3>测试图像</h3>
+                    <canvas id="resultTest"></canvas>
+                </div>
+                <div class="result-box">
+                    <h3>检测结果</h3>
+                    <canvas id="resultFinal"></canvas>
+                </div>
+            </div>
+            <div class="status" id="resultStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        // OpenCV.js 状态变量
+        let cvReady = false;
+        let currentStep = 0;
+        let templateImage = null;
+        let testImage = null;
+        let templateContour = null;
+        
+        // 初始化函数
+        function init() {
+            // 设置上传区域事件
+            setupUploadArea('templateUploadArea', 'templateInput', handleTemplateUpload);
+            setupUploadArea('testUploadArea', 'testInput', handleTestUpload);
+            
+            // 设置步骤按钮事件
+            document.getElementById('prevStep').addEventListener('click', prevStep);
+            document.getElementById('nextStep').addEventListener('click', nextStep);
+            document.getElementById('runAll').addEventListener('click', runAllSteps);
+            
+            // 加载OpenCV.js
+            loadOpenCV();
+        }
+        
+        // 设置上传区域
+        function setupUploadArea(uploadAreaId, inputId, callback) {
+            const uploadArea = document.getElementById(uploadAreaId);
+            const fileInput = document.getElementById(inputId);
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('active');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('active');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('active');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    callback(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    callback(e.target.files[0]);
+                }
+            });
+        }
+        
+        // 处理模板图像上传
+        function handleTemplateUpload(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    templateImage = img;
+                    const canvas = document.getElementById('templateCanvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    checkImagesReady();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 处理测试图像上传
+        function handleTestUpload(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    testImage = img;
+                    const canvas = document.getElementById('testCanvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    checkImagesReady();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 检查图像是否已准备好
+        function checkImagesReady() {
+            if (templateImage && testImage && cvReady) {
+                document.getElementById('processingSection').classList.remove('hidden');
+                resetSteps();
+            }
+        }
+        
+        // 加载OpenCV.js
+        function loadOpenCV() {
+            // 检查是否已加载
+            if (typeof cv !== 'undefined') {
+                cvReady = true;
+                console.log('OpenCV.js is ready');
+                checkImagesReady();
+                return;
+            }
+            
+            // 创建脚本元素
+            const script = document.createElement('script');
+            script.src = 'https://docs.opencv.org/4.5.4/opencv.js';
+            script.onload = function() {
+                // OpenCV.js加载完成
+                cv.onRuntimeInitialized = function() {
+                    cvReady = true;
+                    console.log('OpenCV.js is ready');
+                    checkImagesReady();
+                };
+            };
+            document.head.appendChild(script);
+        }
+        
+        // 切换步骤显示
+        function toggleStep(stepNumber) {
+            const content = document.getElementById(`step${stepNumber}Content`);
+            const isActive = content.classList.contains('active');
+            
+            // 关闭所有步骤
+            document.querySelectorAll('.step-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 如果当前步骤未激活，则激活它
+            if (!isActive) {
+                content.classList.add('active');
+            }
+        }
+        
+        // 重置步骤
+        function resetSteps() {
+            currentStep = 0;
+            templateContour = null;
+            document.getElementById('prevStep').disabled = true;
+            document.getElementById('nextStep').disabled = false;
+            
+            // 隐藏所有步骤内容
+            document.querySelectorAll('.step-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // 隐藏结果区域
+            document.getElementById('resultSection').classList.add('hidden');
+        }
+        
+        // 上一步
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStepButtons();
+                processCurrentStep();
+            }
+        }
+        
+        // 下一步
+        function nextStep() {
+            if (currentStep < 6) {
+                currentStep++;
+                updateStepButtons();
+                processCurrentStep();
+                
+                // 如果是最后一步，显示结果区域
+                if (currentStep === 6) {
+                    document.getElementById('resultSection').classList.remove('hidden');
+                }
+            }
+        }
+        
+        // 更新步骤按钮状态
+        function updateStepButtons() {
+            document.getElementById('prevStep').disabled = currentStep === 0;
+            document.getElementById('nextStep').disabled = currentStep === 6;
+        }
+        
+        // 运行所有步骤
+        function runAllSteps() {
+            resetSteps();
+            for (let i = 0; i <= 6; i++) {
+                currentStep = i;
+                processCurrentStep();
+                if (i === 6) {
+                    document.getElementById('resultSection').classList.remove('hidden');
+                }
+            }
+            updateStepButtons();
+        }
+        
+        // 处理当前步骤
+        function processCurrentStep() {
+            if (!templateImage || !testImage || !cvReady) return;
+            
+            // 显示当前步骤
+            toggleStep(currentStep);
+            
+            // 根据当前步骤执行相应的处理
+            switch(currentStep) {
+                case 1:
+                    processStep1();
+                    break;
+                case 2:
+                    processStep2();
+                    break;
+                case 3:
+                    processStep3();
+                    break;
+                case 4:
+                    processStep4();
+                    break;
+                case 5:
+                    processStep5();
+                    break;
+                case 6:
+                    processStep6();
+                    break;
+            }
+        }
+        
+        // 步骤1: 转换到HSV颜色空间
+        function processStep1() {
+            // 处理测试图像
+            const testSrc = cv.imread('testCanvas');
+            const testHsv = new cv.Mat();
+            cv.cvtColor(testSrc, testHsv, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(testHsv, testHsv, cv.COLOR_RGB2HSV);
+            
+            // 显示结果
+            cv.imshow('step1Original', testSrc);
+            cv.imshow('step1HSV', testHsv);
+            
+            // 清理内存
+            testSrc.delete();
+            testHsv.delete();
+        }
+        
+        // 步骤2: 颜色分割
+        function processStep2() {
+            // 处理测试图像
+            const testSrc = cv.imread('testCanvas');
+            const testHsv = new cv.Mat();
+            cv.cvtColor(testSrc, testHsv, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(testHsv, testHsv, cv.COLOR_RGB2HSV);
+            
+            // 创建紫色掩码
+            const mask = new cv.Mat();
+            const low = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [120, 50, 50, 0]);
+            const high = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [160, 255, 255, 255]);
+            cv.inRange(testHsv, low, high, mask);
+            
+            // 显示结果
+            cv.imshow('step2HSV', testHsv);
+            cv.imshow('step2Mask', mask);
+            
+            // 清理内存
+            testSrc.delete();
+            testHsv.delete();
+            mask.delete();
+            low.delete();
+            high.delete();
+        }
+        
+        // 步骤3: 形态学操作
+        function processStep3() {
+            // 处理测试图像
+            const testSrc = cv.imread('testCanvas');
+            const testHsv = new cv.Mat();
+            cv.cvtColor(testSrc, testHsv, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(testHsv, testHsv, cv.COLOR_RGB2HSV);
+            
+            // 创建紫色掩码
+            const mask = new cv.Mat();
+            const low = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [120, 50, 50, 0]);
+            const high = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [160, 255, 255, 255]);
+            cv.inRange(testHsv, low, high, mask);
+            
+            // 形态学操作
+            const improvedMask = mask.clone();
+            const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
+            cv.morphologyEx(improvedMask, improvedMask, cv.MORPH_OPEN, kernel);
+            cv.morphologyEx(improvedMask, improvedMask, cv.MORPH_CLOSE, kernel);
+            
+            // 显示结果
+            cv.imshow('step3OriginalMask', mask);
+            cv.imshow('step3ImprovedMask', improvedMask);
+            
+            // 清理内存
+            testSrc.delete();
+            testHsv.delete();
+            mask.delete();
+            improvedMask.delete();
+            kernel.delete();
+            low.delete();
+            high.delete();
+        }
+        
+        // 步骤4: 查找轮廓
+        function processStep4() {
+            // 处理测试图像
+            const testSrc = cv.imread('testCanvas');
+            const testHsv = new cv.Mat();
+            cv.cvtColor(testSrc, testHsv, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(testHsv, testHsv, cv.COLOR_RGB2HSV);
+            
+            // 创建紫色掩码
+            const mask = new cv.Mat();
+            const low = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [120, 50, 50, 0]);
+            const high = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [160, 255, 255, 255]);
+            cv.inRange(testHsv, low, high, mask);
+            
+            // 形态学操作
+            const improvedMask = mask.clone();
+            const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
+            cv.morphologyEx(improvedMask, improvedMask, cv.MORPH_OPEN, kernel);
+            cv.morphologyEx(improvedMask, improvedMask, cv.MORPH_CLOSE, kernel);
+            
+            // 查找轮廓
+            const contours = new cv.MatVector();
+            const hierarchy = new cv.Mat();
+            cv.findContours(improvedMask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+            
+            // 绘制轮廓
+            const contoursImg = testSrc.clone();
+            cv.cvtColor(contoursImg, contoursImg, cv.COLOR_RGBA2RGB);
+            cv.drawContours(contoursImg, contours, -1, [0, 255, 0, 255], 2);
+            
+            // 显示结果
+            cv.imshow('step4Mask', improvedMask);
+            cv.imshow('step4Contours', contoursImg);
+            
+            // 清理内存
+            testSrc.delete();
+            testHsv.delete();
+            mask.delete();
+            improvedMask.delete();
+            kernel.delete();
+            contours.delete();
+            hierarchy.delete();
+            contoursImg.delete();
+            low.delete();
+            high.delete();
+        }
+        
+        // 步骤5: 轮廓筛选
+        function processStep5() {
+            // 处理测试图像
+            const testSrc = cv.imread('testCanvas');
+            const testHsv = new cv.Mat();
+            cv.cvtColor(testSrc, testHsv, cv.COLOR_RGBA2RGB);
+            cv.cvtColor(testHsv, testHsv, cv.COLOR_RGB2HSV);
+            
+            // 创建紫色掩码
+            const mask = new cv.Mat();
+            const low = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [120, 50, 50, 0]);
+            const high = new cv.Mat(testHsv.rows, testHsv.cols, testHsv.type(), [160, 255, 255, 255]);
+            cv.inRange(testHsv, low, high, mask);
+            
+            // 形态学操作
+            const improvedMask = mask.clone();
+            const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
+            cv.morphologyEx(improvedMask, improvedMask, cv.MORPH_OPEN, kernel);
+            cv.morphologyEx(improvedMask, improvedMask, cv.MORPH_CLOSE, kernel);
+            
+            // 查找轮廓
+            const contours = new cv.MatVector();
+            const hierarchy = new cv.Mat();
+            cv.findContours(improvedMask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+            
+            // 绘制所有轮廓
+            const allContoursImg = testSrc.clone();
+            cv.cvtColor(allContoursImg, allContoursImg, cv.COLOR_RGBA2RGB);
+            cv.drawContours(allContoursImg, contours, -1, [0, 255, 0, 255], 2);
+            
+            // 筛选轮廓并绘制筛选后的轮廓
+            const filteredContoursImg = testSrc.clone();
+            cv.cvtColor(filteredContoursImg, filteredContoursImg, cv.COLOR_RGBA2RGB);
+            
+            for (let i = 0; i < contours.size(); ++i) {
+                const contour = contours.get(i);
+                const area = cv.contourArea(contour);
+                
+                // 根据面积筛选
+                if (area > 500) {
+                    cv.drawContours(filteredContoursImg, contours, i, [0, 255, 0, 255], 2);
+                    
+                    // 绘制边界框
+                    const rect = cv.boundingRect(contour);
+                    cv.rectangle(filteredContoursImg, 
+                                new cv.Point(rect.x, rect.y), 
+                                new cv.Point(rect.x + rect.width, rect.y + rect.height), 
+                                [255, 0, 0, 255], 2);
+                }
+            }
+            
+            // 显示结果
+            cv.imshow('step5AllContours', allContoursImg);
+            cv.imshow('step5FilteredContours', filteredContoursImg);
+            
+            // 清理内存
+            testSrc.delete();
+            testHsv.delete();
+            mask.delete();
+            improvedMask.delete();
+            kernel.delete();
+            contours.delete();
+            hierarchy.delete();
+            allContoursImg.delete();
+            filteredContoursImg.delete();
+            low.delete();
+            high.delete();
+        }
+        
+        // 步骤6: 形状匹配
+        function processStep6() {
+            try {
+                // 处理模板图像
+                const templateSrc = cv.imread('templateCanvas');
+                const templateHsv = new cv.Mat();
+                cv.cvtColor(templateSrc, templateHsv, cv.COLOR_RGBA2RGB);
+                cv.cvtColor(templateHsv, templateHsv, cv.COLOR_RGB2HSV);
+                
+                // 创建紫色掩码
+                const templateMask = new cv.Mat();
+                const low = new cv.Mat(templateHsv.rows, templateHsv.cols, templateHsv.type(), [120, 50, 50, 0]);
+                const high = new cv.Mat(templateHsv.rows, templateHsv.cols, templateHsv.type(), [160, 255, 255, 255]);
+                cv.inRange(templateHsv, low, high, templateMask);
+                
+                // 形态学操作
+                const improvedTemplateMask = templateMask.clone();
+                const kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(5, 5));
+                cv.morphologyEx(improvedTemplateMask, improvedTemplateMask, cv.MORPH_OPEN, kernel);
+                cv.morphologyEx(improvedTemplateMask, improvedTemplateMask, cv.MORPH_CLOSE, kernel);
+                
+                // 查找模板轮廓
+                const templateContours = new cv.MatVector();
+                const templateHierarchy = new cv.Mat();
+                cv.findContours(improvedTemplateMask, templateContours, templateHierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                
+                // 获取模板轮廓（假设是最大的轮廓）
+                let maxArea = 0;
+                let maxContourIndex = -1;
+                
+                for (let i = 0; i < templateContours.size(); ++i) {
+                    const contour = templateContours.get(i);
+                    const area = cv.contourArea(contour);
+                    if (area > maxArea) {
+                        maxArea = area;
+                        maxContourIndex = i;
+                    }
+                }
+                
+                // 绘制模板轮廓
+                const templateContourImg = templateSrc.clone();
+                cv.cvtColor(templateContourImg, templateContourImg, cv.COLOR_RGBA2RGB);
+                
+                if (maxContourIndex >= 0) {
+                    cv.drawContours(templateContourImg, templateContours, maxContourIndex, [0, 255, 0, 255], 2);
+                    
+                    // 保存模板轮廓用于后续匹配
+                    templateContour = templateContours.get(maxContourIndex);
+                } else {
+                    console.warn("在模板图像中未找到轮廓");
+                }
+                
+                // 处理测试图像
+                const testSrc = cv.imread('testCanvas');
+                const testHsv = new cv.Mat();
+                cv.cvtColor(testSrc, testHsv, cv.COLOR_RGBA2RGB);
+                cv.cvtColor(testHsv, testHsv, cv.COLOR_RGB2HSV);
+                
+                // 创建紫色掩码
+                const testMask = new cv.Mat();
+                cv.inRange(testHsv, low, high, testMask);
+                
+                // 形态学操作
+                const improvedTestMask = testMask.clone();
+                cv.morphologyEx(improvedTestMask, improvedTestMask, cv.MORPH_OPEN, kernel);
+                cv.morphologyEx(improvedTestMask, improvedTestMask, cv.MORPH_CLOSE, kernel);
+                
+                // 查找测试轮廓
+                const testContours = new cv.MatVector();
+                const testHierarchy = new cv.Mat();
+                cv.findContours(improvedTestMask, testContours, testHierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                
+                // 绘制匹配结果
+                const matchingImg = testSrc.clone();
+                cv.cvtColor(matchingImg, matchingImg, cv.COLOR_RGBA2RGB);
+                
+                let matchFound = false;
+                
+                if (templateContour && templateContour.rows > 0) {
+                    for (let i = 0; i < testContours.size(); ++i) {
+                        const contour = testContours.get(i);
+                        const area = cv.contourArea(contour);
+                        
+                        // 根据面积筛选
+                        if (area > 500) {
+                            try {
+                                // 使用Hu矩进行形状匹配
+                                const match = cv.matchShapes(templateContour, contour, cv.CONTOURS_MATCH_I2, 0);
+                                
+                                // 如果匹配度足够高
+                                if (match < 0.5) {
+                                    cv.drawContours(matchingImg, testContours, i, [0, 255, 0, 255], 3);
+                                    
+                                    // 绘制边界框
+                                    const rect = cv.boundingRect(contour);
+                                    cv.rectangle(matchingImg, 
+                                                new cv.Point(rect.x, rect.y), 
+                                                new cv.Point(rect.x + rect.width, rect.y + rect.height), 
+                                                [255, 0, 0, 255], 2);
+                                    
+                                    // 添加匹配度文本
+                                    const text = `匹配度: ${match.toFixed(3)}`;
+                                    cv.putText(matchingImg, text, 
+                                              new cv.Point(rect.x, rect.y - 10), 
+                                              cv.FONT_HERSHEY_SIMPLEX, 0.6, [255, 0, 0, 255], 2);
+                                    
+                                    matchFound = true;
+                                }
+                            } catch (e) {
+                                console.warn(`轮廓 ${i} 形状匹配失败:`, e);
+                            }
+                        }
+                    }
+                }
+                
+                // 显示结果
+                cv.imshow('step6Template', templateContourImg);
+                cv.imshow('step6Matching', matchingImg);
+                
+                // 更新结果区域
+                cv.imshow('resultTemplate', templateContourImg);
+                cv.imshow('resultTest', testSrc);
+                cv.imshow('resultFinal', matchingImg);
+                
+                const resultStatus = document.getElementById('resultStatus');
+                if (matchFound) {
+                    resultStatus.textContent = '检测到目标图形！';
+                    resultStatus.className = 'status success';
+                } else {
+                    resultStatus.textContent = '未检测到目标图形';
+                    resultStatus.className = 'status error';
+                }
+                
+                // 清理内存
+                templateSrc.delete();
+                templateHsv.delete();
+                templateMask.delete();
+                improvedTemplateMask.delete();
+                templateContours.delete();
+                templateHierarchy.delete();
+                templateContourImg.delete();
+                testSrc.delete();
+                testHsv.delete();
+                testMask.delete();
+                improvedTestMask.delete();
+                testContours.delete();
+                testHierarchy.delete();
+                matchingImg.delete();
+                kernel.delete();
+                low.delete();
+                high.delete();
+            } catch (error) {
+                console.error("步骤6处理出错:", error);
+                const resultStatus = document.getElementById('resultStatus');
+                resultStatus.textContent = `处理出错: ${error.message}`;
+                resultStatus.className = 'status error';
+            }
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
