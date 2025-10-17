@@ -9,6 +9,7 @@
     <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script async src="https://docs.opencv.org/4.5.0/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
     <style>
+        /* 样式保持不变 */
         .canvas-container {
             display: flex;
             gap: 20px;
@@ -47,27 +48,10 @@
             transform: translateY(-2px);
         }
 
-        .processing-btn.active {
-            background: #28a745;
-        }
-
         .processing-btn:disabled {
             background: #6c757d;
             cursor: not-allowed;
             transform: none;
-        }
-
-        .video-container {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        video,
-        canvas {
-            border: 1px solid #ccc;
-            max-width: 100%;
         }
 
         .slider-container {
@@ -95,20 +79,6 @@
             border-radius: 4px;
             background: #e9ecef;
             outline: none;
-        }
-
-        .feature-point {
-            position: absolute;
-            width: 5px;
-            height: 5px;
-            background-color: red;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .feature-container {
-            position: relative;
-            display: inline-block;
         }
 
         .tab-container {
@@ -153,21 +123,6 @@
             color: #721c24;
         }
         
-        .sift-controls {
-            margin-top: 15px;
-            padding: 15px;
-            background: #e9ecef;
-            border-radius: 6px;
-        }
-        
-        .match-info {
-            margin-top: 10px;
-            padding: 10px;
-            background: #d4edda;
-            border-radius: 4px;
-            display: none;
-        }
-        
         .download-btn {
             background-color: #28a745;
         }
@@ -206,6 +161,52 @@
             background: #d1ecf1;
             border-radius: 4px;
         }
+        
+        .match-controls {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .match-btn {
+            background-color: #6f42c1;
+            color: white;
+        }
+        
+        .match-btn:hover {
+            background-color: #5a32a3;
+        }
+        
+        .match-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .match-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .match-failure {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .match-rectangle {
+            position: absolute;
+            border: 2px solid #ff0000;
+            background-color: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+        }
+        
+        .large-image-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -222,6 +223,7 @@
         <!-- 标签页导航 -->
         <div class="tab-container">
             <div class="tab active" onclick="switchTab('image-processing')">图像处理</div>
+            <div class="tab" onclick="switchTab('image-matching')">图像匹配</div>
         </div>
 
         <!-- 图像处理部分 -->
@@ -293,6 +295,74 @@
             </div>
         </div>
 
+        <!-- 图像匹配部分 -->
+        <div id="image-matching" class="tab-content bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-700">
+                <i class="fas fa-search mr-2"></i>图像匹配
+            </h2>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">上传大图 (aPath)</label>
+                <input type="file" id="largeImageInput" accept="image/*"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                
+                <div class="large-image-controls">
+                    <button class="processing-btn" onclick="useProcessedAsLargeImage()">使用处理后的图像作为大图</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">上传小图 (bPaths) - 可多选</label>
+                <input type="file" id="smallImageInput" accept="image/*" multiple
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                
+                <div class="large-image-controls">
+                    <button class="processing-btn" onclick="useProcessedAsTemplate()">使用处理后的图像作为小图</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">匹配阈值</label>
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>阈值</span>
+                        <span id="match-threshold-value" class="slider-value">0.8</span>
+                    </div>
+                    <input type="range" id="match-threshold-slider" min="0" max="1" step="0.01" value="0.8" oninput="updateMatchThresholdValue(this.value)">
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0</span>
+                        <span>1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="match-controls">
+                <div class="flex gap-2">
+                    <button class="processing-btn match-btn" onclick="startMatching()">开始匹配</button>
+                </div>
+                
+                <div id="match-result" class="match-result">
+                    <p id="match-result-text"></p>
+                </div>
+            </div>
+
+            <div class="canvas-container mt-4">
+                <div class="relative">
+                    <p class="text-center font-semibold mb-2">大图</p>
+                    <div class="relative inline-block">
+                        <canvas id="largeImageCanvas"></canvas>
+                        <div id="matchRectangle" class="match-rectangle" style="display: none;"></div>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-center font-semibold mb-2">小图</p>
+                    <div id="smallImagesContainer" class="flex flex-wrap gap-4 justify-center">
+                        <!-- 小图将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -305,7 +375,14 @@
         let isCropping = false;
         let cropStartX, cropStartY, cropEndX, cropEndY;
         let selectionOverlay;
-        let hasBeenCropped = false; // 标记图像是否已被裁剪
+        let hasBeenCropped = false;
+        let croppedImage = null;
+
+        // 匹配相关变量
+        let largeImageCanvas, smallImagesContainer, matchRectangle;
+        let matchThresholdValue = 0.8;
+        let largeImageMat = null;
+        let smallImageMats = [];
 
         function onOpenCvReady() {
             document.getElementById('status').innerHTML = 'OpenCV.js 已加载完成 ✓';
@@ -313,12 +390,18 @@
             document.getElementById('status').classList.add('status-success');
             initializeElements();
             setupImageInput();
+            setupMatchingInputs();
         }
 
         function initializeElements() {
             inputCanvas = document.getElementById('inputCanvas');
             outputCanvas = document.getElementById('outputCanvas');
             selectionOverlay = document.getElementById('selectionOverlay');
+            
+            // 匹配相关元素
+            largeImageCanvas = document.getElementById('largeImageCanvas');
+            smallImagesContainer = document.getElementById('smallImagesContainer');
+            matchRectangle = document.getElementById('matchRectangle');
         }
 
         function setupImageInput() {
@@ -331,6 +414,46 @@
                         const img = new Image();
                         img.onload = function () {
                             loadImageToCanvas(img);
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function setupMatchingInputs() {
+            // 大图上传
+            const largeImageInput = document.getElementById('largeImageInput');
+            largeImageInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const img = new Image();
+                        img.onload = function () {
+                            loadLargeImage(img);
+                        };
+                        img.src = reader.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 小图上传
+            const smallImageInput = document.getElementById('smallImageInput');
+            smallImageInput.addEventListener('change', function (e) {
+                const files = e.target.files;
+                smallImageMats = [];
+                smallImagesContainer.innerHTML = '';
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const img = new Image();
+                        img.onload = function () {
+                            loadSmallImage(img, i);
                         };
                         img.src = reader.result;
                     };
@@ -355,10 +478,52 @@
             cv.imshow(outputCanvas, dst);
             
             isImageLoaded = true;
-            hasBeenCropped = false; // 重置裁剪标记
+            hasBeenCropped = false;
+            croppedImage = null;
             
             // 重置裁剪状态
             cancelCrop();
+        }
+
+        function loadLargeImage(img) {
+            largeImageCanvas.width = img.width;
+            largeImageCanvas.height = img.height;
+            
+            // 创建OpenCV Mat对象
+            if (largeImageMat) largeImageMat.delete();
+            largeImageMat = cv.imread(img);
+            cv.imshow(largeImageCanvas, largeImageMat);
+            
+            // 隐藏匹配矩形
+            matchRectangle.style.display = 'none';
+            
+            // 清除匹配结果
+            document.getElementById('match-result').style.display = 'none';
+        }
+
+        function loadSmallImage(img, index) {
+            // 创建canvas显示小图
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            canvas.className = 'border border-gray-300';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            // 添加到容器
+            const container = document.createElement('div');
+            container.className = 'text-center';
+            container.innerHTML = `<p class="text-sm mb-1">小图 ${index + 1}</p>`;
+            container.appendChild(canvas);
+            smallImagesContainer.appendChild(container);
+            
+            // 创建OpenCV Mat对象并保存
+            const mat = cv.imread(img);
+            smallImageMats.push(mat);
+            
+            // 清除匹配结果
+            document.getElementById('match-result').style.display = 'none';
         }
 
         // 标签页切换功能
@@ -384,6 +549,12 @@
         function updateThresholdValue(value) {
             thresholdValue = parseInt(value);
             document.getElementById('threshold-value').textContent = value;
+        }
+
+        // 更新匹配阈值显示
+        function updateMatchThresholdValue(value) {
+            matchThresholdValue = parseFloat(value);
+            document.getElementById('match-threshold-value').textContent = value.toFixed(2);
         }
 
         // 统一的处理函数，确保每个功能都在当前处理结果上进行
@@ -490,6 +661,7 @@
             });
         }
 
+        // 裁剪相关函数保持不变...
         // 开始裁剪模式
         function startCrop() {
             if (!isImageLoaded || !originalSrc) {
@@ -586,16 +758,17 @@
                 return;
             }
             
-            // 使用当前处理图像或原始图像进行裁剪
-            const sourceImage = currentProcessed || originalSrc;
-            
-            // 创建ROI（感兴趣区域）
+            // 使用原始图像进行裁剪
             const rect = new cv.Rect(x, y, width, height);
-            const cropped = sourceImage.roi(rect);
+            const cropped = originalSrc.roi(rect);
+            
+            // 保存裁剪后的图像
+            if (croppedImage) croppedImage.delete();
+            croppedImage = cropped.clone();
             
             // 更新当前处理图像
             if (currentProcessed) currentProcessed.delete();
-            currentProcessed = cropped.clone();
+            currentProcessed = croppedImage.clone();
             
             // 更新输出Canvas尺寸
             outputCanvas.width = width;
@@ -663,8 +836,19 @@
         function resetImage() {
             if (!isImageLoaded || !originalSrc) return;
             
-            // 如果图像已被裁剪，重置到原始图像
-            if (hasBeenCropped) {
+            // 重置图像只重置处理效果，不重置裁剪
+            if (hasBeenCropped && croppedImage) {
+                // 如果图像已被裁剪，重置到裁剪后的图像
+                if (currentProcessed) currentProcessed.delete();
+                currentProcessed = croppedImage.clone();
+                
+                // 确保输出Canvas尺寸正确
+                outputCanvas.width = croppedImage.cols;
+                outputCanvas.height = croppedImage.rows;
+                
+                cv.imshow(outputCanvas, currentProcessed);
+            } else {
+                // 如果图像未被裁剪，重置到原始图像
                 if (currentProcessed) currentProcessed.delete();
                 currentProcessed = originalSrc.clone();
                 
@@ -673,25 +857,220 @@
                 outputCanvas.height = inputCanvas.height;
                 
                 cv.imshow(outputCanvas, currentProcessed);
-                
-                // 重置裁剪标记
-                hasBeenCropped = false;
-            } else {
-                // 如果图像未被裁剪，只重置处理效果
-                if (currentProcessed) currentProcessed.delete();
-                currentProcessed = originalSrc.clone();
-                cv.imshow(outputCanvas, currentProcessed);
             }
             
             cancelCrop();
         }
 
+        // 使用处理后的图像作为大图
+        function useProcessedAsLargeImage() {
+            if (!isImageLoaded || !currentProcessed) {
+                alert('请先上传并处理图像');
+                return;
+            }
+            
+            // 更新大图Canvas尺寸
+            largeImageCanvas.width = currentProcessed.cols;
+            largeImageCanvas.height = currentProcessed.rows;
+            
+            // 更新大图Mat对象
+            if (largeImageMat) largeImageMat.delete();
+            largeImageMat = currentProcessed.clone();
+            
+            // 显示大图
+            cv.imshow(largeImageCanvas, largeImageMat);
+            
+            // 隐藏匹配矩形
+            matchRectangle.style.display = 'none';
+            
+            // 清除匹配结果
+            document.getElementById('match-result').style.display = 'none';
+        }
+
+        // 使用处理后的图像作为小图
+        function useProcessedAsTemplate() {
+            if (!isImageLoaded || !currentProcessed) {
+                alert('请先上传并处理图像');
+                return;
+            }
+            
+            // 清空之前的小图
+            smallImageMats.forEach(mat => {
+                if (mat) mat.delete();
+            });
+            smallImageMats = [];
+            smallImagesContainer.innerHTML = '';
+            
+            // 创建canvas显示处理后的图像
+            const canvas = document.createElement('canvas');
+            canvas.width = currentProcessed.cols;
+            canvas.height = currentProcessed.rows;
+            canvas.className = 'border border-gray-300';
+            
+            cv.imshow(canvas, currentProcessed);
+            
+            // 添加到容器
+            const container = document.createElement('div');
+            container.className = 'text-center';
+            container.innerHTML = `<p class="text-sm mb-1">处理后的图像</p>`;
+            container.appendChild(canvas);
+            smallImagesContainer.appendChild(container);
+            
+            // 保存为小图Mat对象
+            const mat = currentProcessed.clone();
+            smallImageMats.push(mat);
+            
+            // 清除匹配结果
+            document.getElementById('match-result').style.display = 'none';
+        }
+
+        // 开始匹配
+        async function startMatching() {
+            if (!largeImageMat || smallImageMats.length === 0) {
+                alert('请先上传大图和小图');
+                return;
+            }
+            
+            // 显示匹配中状态
+            document.getElementById('match-result').style.display = 'block';
+            document.getElementById('match-result').className = 'match-result status-processing';
+            document.getElementById('match-result-text').textContent = '正在匹配中...';
+            
+            // 隐藏之前的匹配矩形
+            matchRectangle.style.display = 'none';
+            
+            try {
+                // 调用findPic函数进行匹配
+                const result = await findPic(largeImageMat, smallImageMats, matchThresholdValue);
+                
+                // 显示匹配结果
+                const matchResult = document.getElementById('match-result');
+                const matchResultText = document.getElementById('match-result-text');
+                
+                if (result.found) {
+                    matchResult.className = 'match-result match-success';
+                    matchResultText.textContent = `匹配成功！置信度: ${result.confidence.toFixed(4)}，位置: (${result.location.x}, ${result.location.y})`;
+                    
+                    // 显示匹配矩形
+                    showMatchRectangle(result.location);
+                } else {
+                    matchResult.className = 'match-result match-failure';
+                    matchResultText.textContent = `匹配失败！最高置信度: ${result.confidence.toFixed(4)}`;
+                }
+            } catch (error) {
+                console.error('匹配过程中出错:', error);
+                document.getElementById('match-result').className = 'match-result status-error';
+                document.getElementById('match-result-text').textContent = '匹配过程中出错: ' + error.message;
+            }
+        }
+
+        // 显示匹配矩形
+        function showMatchRectangle(location) {
+            matchRectangle.style.left = location.x + 'px';
+            matchRectangle.style.top = location.y + 'px';
+            matchRectangle.style.width = location.width + 'px';
+            matchRectangle.style.height = location.height + 'px';
+            matchRectangle.style.display = 'block';
+        }
+
+ // 图像匹配函数
+ async function findPic(aMat, bMats, threshold = 0.8) {
+            const templateMats = Array.isArray(bMats) ? bMats : [bMats];
+
+            try {
+                const srcMat = aMat;
+                const srcGray = new cv.Mat();
+                cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
+
+                let bestResult = {
+                    found: false,
+                    confidence: 0,
+                    location: null,
+                    index: -1,
+                };
+
+                for (let i = 0; i < templateMats.length; i++) {
+                    const templMat = templateMats[i];
+                    let templGray = null;
+                    let mask = null;
+
+                    try {
+                        templGray = new cv.Mat();
+                        cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
+
+                        // 检查图像尺寸，避免模板图比原图大
+                        if (templGray.rows > srcGray.rows || templGray.cols > srcGray.cols) {
+                            console.warn(`模板图片 ${i} 尺寸大于原图，跳过匹配`);
+                            continue;
+                        }
+
+
+
+                        const result = new cv.Mat();
+                        const method = cv.TM_CCOEFF_NORMED;
+
+                        cv.matchTemplate(srcGray, templGray, result, method);
+
+                        const minMax = cv.minMaxLoc(result);
+                        let maxValue = minMax.maxVal;
+                        const maxLoc = minMax.maxLoc;
+
+                        // 关键修复：检查并处理异常数值
+                        if (!isFinite(maxValue)) {
+                            console.warn(`检测到异常匹配值: ${maxValue}，将其设置为0`);
+                            maxValue = 0;
+                        }
+
+                        // 确保匹配值在合理范围内 [0, 1]
+                        maxValue = Math.max(0, Math.min(1, maxValue));
+
+                        result.delete();
+                        if (mask) {
+                            mask.delete();
+                        }
+                        
+                        // 更新最佳结果
+                        if (maxValue > bestResult.confidence) {
+                            bestResult = {
+                                found: maxValue >= threshold,
+                                confidence: maxValue,
+                                location: {
+                                    x: maxLoc.x,
+                                    y: maxLoc.y,
+                                    width: templMat.cols,
+                                    height: templMat.rows
+                                },
+                                index: i,
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`处理模板图片 ${i} 时出错:`, error);
+                    } finally {
+                        if (templGray) templGray.delete();
+                    }
+                }
+
+                srcGray.delete();
+
+                return bestResult;
+            } catch (error) {
+                console.error('图像处理出错:', error);
+                throw error;
+            }
+        }
         // 清理资源
         window.addEventListener('beforeunload', function () {
             if (src) src.delete();
             if (dst) dst.delete();
             if (originalSrc) originalSrc.delete();
             if (currentProcessed) currentProcessed.delete();
+            if (croppedImage) croppedImage.delete();
+            if (largeImageMat) largeImageMat.delete();
+            
+            // 清理小图Mat对象
+            smallImageMats.forEach(mat => {
+                if (mat) mat.delete();
+            });
         });
     </script>
 </body>
