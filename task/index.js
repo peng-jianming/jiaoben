@@ -2,7 +2,8 @@
 const Jimp = require('jimp');
 const cv = require('../opencv.js');
 const path = require('path')
-
+const 多点关联颜色匹配 = require('./ccc.js')
+const { getScreen } = require('../touping.js')
 
 // 获取图片四个角的颜色
 const getImageCorners = (image) => {
@@ -99,77 +100,75 @@ class Mhxy {
         const offset = (Math.random() * (offsetTime * 2) - offsetTime).toFixed(2); // -2到+2秒之间
         const actualSeconds = Math.max(0, parseFloat(time) + parseFloat(offset));
 
-        // console.log(`基础等待: ${time}s | 实际等待: ${actualSeconds}s (浮动: ${offset}s)`);
         return new Promise(resolve => setTimeout(resolve, actualSeconds * 1000));
     }
 
     async findPic(aPath, bPaths, threshold = 0.8) {
         const templatePaths = Array.isArray(bPaths) ? bPaths : [bPaths];
-    
+
         try {
             const aImage = await Jimp.Jimp.read(aPath);
             const srcMat = cv.matFromImageData(aImage.bitmap);
             const srcGray = new cv.Mat();
             cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
-    
+
             for (let i = 0; i < templatePaths.length; i++) {
                 const bPath = templatePaths[i];
                 let bImage = null;
                 let templMat = null;
                 let templGray = null;
                 let mask = null;
-    
+
                 try {
                     bImage = await Jimp.Jimp.read(bPath);
                     templMat = cv.matFromImageData(bImage.bitmap);
                     templGray = new cv.Mat();
                     cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
-    
+
                     // 检查图像尺寸，避免模板图比原图大
                     if (templGray.rows > srcGray.rows || templGray.cols > srcGray.cols) {
-                        console.warn(`模板图片 ${bPath} 尺寸大于原图，跳过匹配`);
+                        // console.warn(`模板图片 ${bPath} 尺寸大于原图，跳过匹配`);
                         continue;
                     }
-    
+
                     const corners = getImageCorners(bImage);
                     const hasTransparentColor = hasSameCornerColors(corners);
-    
+
                     if (hasTransparentColor) {
                         const transparentColor = corners[0];
                         mask = await createTransparencyMask(templMat, transparentColor, false);
                     }
-    
+
                     const result = new cv.Mat();
                     const method = cv.TM_CCOEFF_NORMED;
-    
+
                     if (mask) {
                         cv.matchTemplate(srcGray, templGray, result, method, mask);
                     } else {
                         cv.matchTemplate(srcGray, templGray, result, method);
                     }
-    
+
                     const minMax = cv.minMaxLoc(result);
                     let maxValue = minMax.maxVal;
-    
+
                     // 关键修复：检查并处理异常数值
                     if (!isFinite(maxValue)) {
-                        console.warn(`检测到异常匹配值: ${maxValue}，将其设置为0`);
+                        // console.warn(`检测到异常匹配值: ${maxValue}，将其设置为0`);
                         maxValue = 0;
                     }
-    
+
                     // 确保匹配值在合理范围内 [0, 1]
                     maxValue = Math.max(0, Math.min(1, maxValue));
-    
+
                     result.delete();
                     if (mask) {
                         mask.delete();
                     }
-                    console.log(maxValue, '000000');
-                    
+
                     if (maxValue >= threshold) {
                         srcMat.delete();
                         srcGray.delete();
-    
+
                         return {
                             found: true,
                             confidence: maxValue,
@@ -189,10 +188,10 @@ class Mhxy {
                     if (templGray) templGray.delete();
                 }
             }
-    
+
             srcMat.delete();
             srcGray.delete();
-    
+
             return {
                 found: false,
                 confidence: 0,
@@ -226,7 +225,7 @@ class Mhxy {
             // 检查所有坐标是否在范围内
             for (const coord of coordArray) {
                 if (coord.x >= width || coord.y >= height || coord.x < 0 || coord.y < 0) {
-                    console.warn(`坐标点 (${coord.x}, ${coord.y}) 超出图片范围 (${width}x${height})`);
+                    // console.warn(`坐标点 (${coord.x}, ${coord.y}) 超出图片范围 (${width}x${height})`);
                     return false;
                 }
             }
@@ -245,7 +244,7 @@ class Mhxy {
 
                 // 比较颜色（忽略大小写）
                 if (actualColor.toLowerCase() !== coord.color.toLowerCase()) {
-                    console.log(`坐标 (${coord.x}, ${coord.y}) 颜色不匹配: 期望 ${coord.color}, 实际 ${actualColor}`);
+                    // console.log(`坐标 (${coord.x}, ${coord.y}) 颜色不匹配: 期望 ${coord.color}, 实际 ${actualColor}`);
                     return false;
                 }
             }
@@ -256,6 +255,11 @@ class Mhxy {
             console.error('Jimp处理错误:', error);
             return false;
         }
+    }
+
+    async 多点关联颜色匹配(信息) {
+        const url = await getScreen(this.hwnd)
+        return 多点关联颜色匹配(信息.特征, url, 信息.相似度, 信息.区域,)
     }
 }
 
