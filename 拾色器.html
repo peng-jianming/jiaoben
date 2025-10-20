@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图像颜色拾取工具（固定位置放大镜）</title>
+    <title>图像颜色拾取工具</title>
     <style>
         * {
             margin: 0;
@@ -44,11 +44,6 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
         .tool-container {
             display: flex;
             flex-wrap: wrap;
@@ -62,17 +57,16 @@
         }
 
         .info-section {
-            flex: 1;
-            min-width: 300px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 10px;
+            width: 300px;
             padding: 20px;
         }
 
         .upload-area {
             border: 2px dashed rgba(255, 255, 255, 0.5);
             border-radius: 10px;
-            padding: 30px;
+            padding: 10px;
             text-align: center;
             margin-bottom: 20px;
             transition: all 0.3s;
@@ -91,16 +85,16 @@
 
         .canvas-container {
             position: relative;
-            width: 100%;
-            border-radius: 10px;
-            overflow: hidden;
+            width: 800px;
+            height: 500px;
+            overflow: auto;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin: 0 auto;
         }
 
         #colorCanvas {
             display: block;
-            max-width: 100%;
-            cursor: crosshair;
+            /* 移除 max-width: 100% 以保持原图尺寸 */
         }
 
         .current-color {
@@ -125,7 +119,6 @@
             width: 160px;
             height: 160px;
             border: 2px solid white;
-            border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
             background: #333;
@@ -146,98 +139,8 @@
             max-width: 160px;
         }
 
-        .color-display {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            flex: 1;
-        }
-
-        .color-preview {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
-            border: 2px solid white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .color-details {
-            flex: 1;
-        }
-
-        .color-details h3 {
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-        }
-
-        .instructions {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .instructions h3 {
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .instructions ul {
-            list-style-type: none;
-            padding-left: 10px;
-        }
-
-        .instructions li {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .instructions li::before {
-            content: '•';
-            color: #fdbb2d;
-            font-weight: bold;
-        }
-
-        .keyboard-controls {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 15px;
-        }
-
-        .keyboard-controls h4 {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .control-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-
-        .keys {
-            display: flex;
-            gap: 5px;
-        }
-
-        .key {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-family: monospace;
-        }
-
         .color-list {
-            max-height: 300px;
+            max-height: 200px;
             overflow-y: auto;
             padding-right: 10px;
         }
@@ -276,6 +179,8 @@
             width: 30px;
             height: 30px;
             flex-shrink: 0;
+            border-radius: 4px;
+            border: 1px solid white;
         }
 
         .color-item .color-info {
@@ -306,6 +211,7 @@
 
         .actions {
             display: flex;
+            flex-direction: column;
             gap: 10px;
             margin-top: 20px;
         }
@@ -338,34 +244,6 @@
         .btn-primary:hover {
             background: #5a7cff;
         }
-
-        footer {
-            text-align: center;
-            margin-top: 20px;
-            opacity: 0.7;
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-            .tool-container {
-                flex-direction: column;
-            }
-
-            .current-color {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .magnifier-container {
-                order: 2;
-            }
-
-            .color-display {
-                order: 1;
-                align-items: center;
-                text-align: center;
-            }
-        }
     </style>
 </head>
 
@@ -373,7 +251,6 @@
     <div class="container">
         <header>
             <h1>图像颜色拾取工具</h1>
-            <p class="subtitle">带固定位置放大镜的颜色选择器 - 最多可记录10种颜色</p>
         </header>
 
         <div class="tool-container">
@@ -381,7 +258,6 @@
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
                     <h3>点击或拖放图片到这里</h3>
-                    <p>支持 JPG、PNG、GIF 等格式</p>
                     <input type="file" id="imageUpload" accept="image/*" style="display: none;">
                 </div>
 
@@ -391,47 +267,6 @@
             </div>
 
             <div class="info-section">
-                <div class="instructions">
-                    <h3>📋 使用说明</h3>
-                    <ul>
-                        <li>上传图片后，将鼠标移动到图片上</li>
-                        <li>使用固定位置放大镜精确查看当前像素</li>
-                        <li>点击鼠标或按Enter键记录颜色和坐标</li>
-                        <li>最多可以保存10个颜色记录</li>
-                        <li>点击删除按钮可移除单个颜色记录</li>
-                    </ul>
-
-                    <div class="keyboard-controls">
-                        <h4>⌨️ 键盘控制</h4>
-                        <div class="control-item">
-                            <span>移动选择框</span>
-                            <div class="keys">
-                                <span class="key">←</span>
-                                <span class="key">↑</span>
-                                <span class="key">→</span>
-                                <span class="key">↓</span>
-                            </div>
-                        </div>
-                        <div class="control-item">
-                            <span>快速移动</span>
-                            <div class="keys">
-                                <span class="key">Shift</span>
-                                <span>+</span>
-                                <span class="key">←</span>
-                                <span class="key">↑</span>
-                                <span class="key">→</span>
-                                <span class="key">↓</span>
-                            </div>
-                        </div>
-                        <div class="control-item">
-                            <span>确认选择</span>
-                            <div class="keys">
-                                <span class="key">Enter</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="current-color">
                     <div class="magnifier-container">
                         <div class="magnifier" id="magnifier">
@@ -439,18 +274,22 @@
                         </div>
                         <div class="magnifier-info" id="magnifierInfo">坐标: (0,0)</div>
                     </div>
+                </div>
 
-                    <div class="color-display">
-                        <div class="color-preview" id="currentColorPreview"></div>
-                        <div class="color-details">
-                            <h3>当前颜色</h3>
-                            <p id="currentColorText">尚未选择颜色</p>
-                            <p id="currentCoordinates">坐标: (0, 0)</p>
-                        </div>
+                <div class="rectangle-info" id="rectangleInfo" style="display: none;">
+                    <h3>矩形区域</h3>
+                    <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                        <div style="margin-bottom: 8px;">起点: (<span id="rectStartX">0</span>, <span id="rectStartY">0</span>)</div>
+                        <div style="margin-bottom: 8px;">终点: (<span id="rectEndX">0</span>, <span id="rectEndY">0</span>)</div>
+                        <div style="margin-bottom: 8px;">宽度: <span id="rectWidth">0</span> px</div>
+                        <div style="margin-bottom: 8px;">高度: <span id="rectHeight">0</span> px</div>
+                        <button class="btn" id="clearRectBtn" style="margin-top: 10px;">
+                            <span>🗑️</span> 清除矩形
+                        </button>
                     </div>
                 </div>
 
-                <h3>已记录的颜色 (<span id="recordCount">0</span>/10)</h3>
+                <h3>已记录的颜色</h3>
                 <div class="color-list" id="colorList"></div>
 
                 <div class="actions">
@@ -463,10 +302,6 @@
                 </div>
             </div>
         </div>
-
-        <footer>
-            <p>图像颜色拾取工具 &copy; 2023 | 使用 HTML5 Canvas 和 JavaScript 构建</p>
-        </footer>
     </div>
 
     <script>
@@ -474,16 +309,13 @@
         const imageUpload = document.getElementById('imageUpload');
         const uploadArea = document.getElementById('uploadArea');
         const colorCanvas = document.getElementById('colorCanvas');
-        const magnifier = document.getElementById('magnifier');
         const magnifierCanvas = document.getElementById('magnifierCanvas');
         const magnifierInfo = document.getElementById('magnifierInfo');
-        const currentColorPreview = document.getElementById('currentColorPreview');
-        const currentColorText = document.getElementById('currentColorText');
-        const currentCoordinates = document.getElementById('currentCoordinates');
         const colorList = document.getElementById('colorList');
-        const recordCount = document.getElementById('recordCount');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const copyAllBtn = document.getElementById('copyAllBtn');
+        const rectangleInfo = document.getElementById('rectangleInfo');
+        const clearRectBtn = document.getElementById('clearRectBtn');
 
         const ctx = colorCanvas.getContext('2d');
         const magnifierCtx = magnifierCanvas.getContext('2d');
@@ -491,16 +323,25 @@
         // 初始化变量
         let imageLoaded = false;
         let colorRecords = [];
-        const MAX_RECORDS = 10;
-        const MAGNIFIER_SIZE = 160;
-        const GRID_SIZE = 16; // 网格大小（显示16x16像素区域）
-        const PIXEL_SIZE = MAGNIFIER_SIZE / GRID_SIZE; // 每个像素在放大镜中的大小
+        const MAGNIFIER_SIZE = 210;
+        const GRID_SIZE = 11;
+        const PIXEL_SIZE = MAGNIFIER_SIZE / GRID_SIZE;
 
         // 当前选择状态
         let currentX = 0;
         let currentY = 0;
 
+        // 矩形框选状态
+        let isDrawingRect = false;
+        let rectStartX = 0;
+        let rectStartY = 0;
+        let rectEndX = 0;
+        let rectEndY = 0;
+        let hasRectangle = false;
+        let originalImageData = null;
+
         // 设置放大镜尺寸
+        const magnifier = document.getElementById('magnifier');
         magnifier.style.width = `${MAGNIFIER_SIZE}px`;
         magnifier.style.height = `${MAGNIFIER_SIZE}px`;
         magnifierCanvas.width = MAGNIFIER_SIZE;
@@ -511,6 +352,24 @@
             imageUpload.click();
         });
 
+        // 重绘Canvas（包括图片和矩形）
+        function redrawCanvas() {
+            if (!originalImageData) return;
+            
+            ctx.putImageData(originalImageData, 0, 0);
+            
+            if (hasRectangle) {
+                drawRectangle(rectStartX, rectStartY, rectEndX, rectEndY);
+            }
+        }
+
+        // 绘制矩形框
+        function drawRectangle(x1, y1, x2, y2) {
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        }
+
         // 文件上传事件
         imageUpload.addEventListener('change', function (e) {
             const file = e.target.files[0];
@@ -520,19 +379,27 @@
             reader.onload = function (event) {
                 const img = new Image();
                 img.onload = function () {
-                    // 设置Canvas尺寸与图片相同
+                    // 设置Canvas尺寸与图片相同（保持原尺寸）
                     colorCanvas.width = img.width;
                     colorCanvas.height = img.height;
 
                     // 绘制图片到Canvas
                     ctx.drawImage(img, 0, 0);
+                    
+                    // 保存原始图片数据
+                    originalImageData = ctx.getImageData(0, 0, img.width, img.height);
                     imageLoaded = true;
+
+                    // 清除之前的矩形
+                    hasRectangle = false;
+                    rectangleInfo.style.display = 'none';
 
                     // 更新上传区域文本
                     uploadArea.innerHTML = `
                         <div class="upload-icon">✅</div>
                         <h3>图片已加载</h3>
-                        <p>现在您可以在图片上选择颜色</p>
+                        <p>图片尺寸: ${img.width} × ${img.height}</p>
+                        <p style="font-size: 0.9rem; margin-top: 5px;">按住Ctrl键拖动鼠标框选矩形</p>
                     `;
 
                     // 初始化放大镜显示
@@ -567,54 +434,113 @@
             }
         });
 
-        // Canvas鼠标移动事件 - 更新放大镜
+        // Canvas鼠标按下事件 - 开始框选
+        colorCanvas.addEventListener('mousedown', function (event) {
+            if (!imageLoaded) return;
+            
+            // 只有按住Ctrl键时才开始框选
+            if (event.ctrlKey) {
+                isDrawingRect = true;
+                
+                const rect = colorCanvas.getBoundingClientRect();
+                const scaleX = colorCanvas.width / rect.width;
+                const scaleY = colorCanvas.height / rect.height;
+                const x = Math.floor((event.clientX - rect.left) * scaleX);
+                const y = Math.floor((event.clientY - rect.top) * scaleY);
+                
+                rectStartX = x;
+                rectStartY = y;
+                rectEndX = x;
+                rectEndY = y;
+                
+                // 清除之前的矩形
+                hasRectangle = false;
+                redrawCanvas();
+            }
+        });
+
+        // Canvas鼠标移动事件 - 更新放大镜和矩形框选
         colorCanvas.addEventListener('mousemove', function (event) {
             if (!imageLoaded) return;
 
-            // 获取Canvas相对于视口的位置
             const rect = colorCanvas.getBoundingClientRect();
-
-            // 计算鼠标在Canvas内的坐标
             const scaleX = colorCanvas.width / rect.width;
             const scaleY = colorCanvas.height / rect.height;
             const x = Math.floor((event.clientX - rect.left) * scaleX);
             const y = Math.floor((event.clientY - rect.top) * scaleY);
 
-            // 更新当前坐标
             currentX = x;
             currentY = y;
+            
+            // 如果正在框选矩形
+            if (isDrawingRect) {
+                rectEndX = x;
+                rectEndY = y;
+                
+                // 重绘canvas
+                redrawCanvas();
+                
+                // 绘制临时矩形
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(rectStartX, rectStartY, rectEndX - rectStartX, rectEndY - rectStartY);
+                ctx.setLineDash([]);
+            } else {
+                updateMagnifier(x, y);
+            }
+        });
 
-            // 更新放大镜
-            updateMagnifier(x, y);
-
-            // 获取当前颜色
-            const pixelData = ctx.getImageData(x, y, 1, 1).data;
-            const r = pixelData[0];
-            const g = pixelData[1];
-            const b = pixelData[2];
-            const a = pixelData[3] / 255;
-
-            // 更新当前颜色显示
-            const color = `rgba(${r}, ${g}, ${b}, ${a})`;
-            currentColorPreview.style.backgroundColor = color;
-            currentColorText.textContent = `RGB: ${r}, ${g}, ${b} | HEX: #${rgbToHex(r, g, b)}`;
-            currentCoordinates.textContent = `坐标: (${x}, ${y})`;
+        // Canvas鼠标抬起事件 - 完成框选
+        colorCanvas.addEventListener('mouseup', function (event) {
+            if (!imageLoaded) return;
+            
+            if (isDrawingRect) {
+                isDrawingRect = false;
+                
+                const rect = colorCanvas.getBoundingClientRect();
+                const scaleX = colorCanvas.width / rect.width;
+                const scaleY = colorCanvas.height / rect.height;
+                const x = Math.floor((event.clientX - rect.left) * scaleX);
+                const y = Math.floor((event.clientY - rect.top) * scaleY);
+                
+                rectEndX = x;
+                rectEndY = y;
+                
+                // 确保起点在左上角，终点在右下角
+                const x1 = Math.min(rectStartX, rectEndX);
+                const y1 = Math.min(rectStartY, rectEndY);
+                const x2 = Math.max(rectStartX, rectEndX);
+                const y2 = Math.max(rectStartY, rectEndY);
+                
+                rectStartX = x1;
+                rectStartY = y1;
+                rectEndX = x2;
+                rectEndY = y2;
+                
+                hasRectangle = true;
+                
+                // 重绘canvas
+                redrawCanvas();
+                
+                // 更新矩形信息显示
+                updateRectangleInfo();
+            }
         });
 
         // Canvas点击事件 - 记录颜色
         colorCanvas.addEventListener('click', function (event) {
             if (!imageLoaded) return;
+            
+            // 如果按住Ctrl键，不执行拾色
+            if (event.ctrlKey) return;
 
-            // 获取Canvas相对于视口的位置
             const rect = colorCanvas.getBoundingClientRect();
-
-            // 计算鼠标在Canvas内的坐标
             const scaleX = colorCanvas.width / rect.width;
             const scaleY = colorCanvas.height / rect.height;
             const x = Math.floor((event.clientX - rect.left) * scaleX);
             const y = Math.floor((event.clientY - rect.top) * scaleY);
 
-            // 记录颜色
             recordColor(x, y);
         });
 
@@ -624,7 +550,7 @@
 
             let step = 1;
             if (event.shiftKey) {
-                step = 10; // 快速移动
+                step = 10;
             }
 
             switch (event.key) {
@@ -650,109 +576,75 @@
                     break;
             }
 
-            // 更新放大镜和当前颜色
             updateMagnifier(currentX, currentY);
-            updateCurrentColor();
         });
-
-        // 更新当前颜色
-        function updateCurrentColor() {
-            const pixelData = ctx.getImageData(currentX, currentY, 1, 1).data;
-            const r = pixelData[0];
-            const g = pixelData[1];
-            const b = pixelData[2];
-            const a = pixelData[3] / 255;
-
-            // 更新当前颜色显示
-            const color = `rgba(${r}, ${g}, ${b}, ${a})`;
-            currentColorPreview.style.backgroundColor = color;
-            currentColorText.textContent = `RGB: ${r}, ${g}, ${b} | HEX: #${rgbToHex(r, g, b)}`;
-            currentCoordinates.textContent = `坐标: (${currentX}, ${currentY})`;
-        }
 
         // 更新放大镜内容
         function updateMagnifier(x, y) {
-            // 计算要显示的像素区域（以鼠标位置为中心）
             const halfGrid = Math.floor(GRID_SIZE / 2);
             const startX = x - halfGrid;
             const startY = y - halfGrid;
 
-            // 清除放大镜Canvas
             magnifierCtx.clearRect(0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
 
-            // 绘制每个像素
             for (let i = 0; i < GRID_SIZE; i++) {
                 for (let j = 0; j < GRID_SIZE; j++) {
                     const pixelX = startX + i;
                     const pixelY = startY + j;
 
-                    // 检查是否在图像范围内
                     if (pixelX >= 0 && pixelX < colorCanvas.width &&
                         pixelY >= 0 && pixelY < colorCanvas.height) {
-
-                        // 获取像素颜色
                         const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
                         const r = pixelData[0];
                         const g = pixelData[1];
                         const b = pixelData[2];
-
-                        // 绘制像素
                         magnifierCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                         magnifierCtx.fillRect(i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
                     } else {
-                        // 超出图像范围，绘制为灰色
                         magnifierCtx.fillStyle = '#666';
                         magnifierCtx.fillRect(i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
                     }
 
-                    // 绘制网格线
                     magnifierCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
                     magnifierCtx.lineWidth = 0.5;
                     magnifierCtx.strokeRect(i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
                 }
             }
 
-            // 高亮显示中心像素（当前选中的像素）
             const centerX = halfGrid * PIXEL_SIZE;
             const centerY = halfGrid * PIXEL_SIZE;
             magnifierCtx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
             magnifierCtx.lineWidth = 2;
             magnifierCtx.strokeRect(centerX, centerY, PIXEL_SIZE, PIXEL_SIZE);
 
-            // 绘制中心十字线
             magnifierCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             magnifierCtx.lineWidth = 1;
 
-            // 垂直线
             magnifierCtx.beginPath();
             magnifierCtx.moveTo(MAGNIFIER_SIZE / 2, 0);
             magnifierCtx.lineTo(MAGNIFIER_SIZE / 2, MAGNIFIER_SIZE);
             magnifierCtx.stroke();
 
-            // 水平线
             magnifierCtx.beginPath();
             magnifierCtx.moveTo(0, MAGNIFIER_SIZE / 2);
             magnifierCtx.lineTo(MAGNIFIER_SIZE, MAGNIFIER_SIZE / 2);
             magnifierCtx.stroke();
 
-            // 更新放大镜信息
             const pixelData = ctx.getImageData(x, y, 1, 1).data;
             const r = pixelData[0];
             const g = pixelData[1];
             const b = pixelData[2];
-            magnifierInfo.textContent = `坐标: (${x},${y}) | 颜色: #${rgbToHex(r, g, b)}`;
+            magnifierInfo.innerHTML = `坐标: (${x},${y}) <br/> 颜色: #${rgbToHex(r, g, b)}`;
         }
 
         // 记录颜色
         function recordColor(x, y) {
-            // 获取点击位置的像素数据
             const pixelData = ctx.getImageData(x, y, 1, 1).data;
             const r = pixelData[0];
             const g = pixelData[1];
             const b = pixelData[2];
             const a = pixelData[3] / 255;
 
-            // 将颜色和坐标信息添加到数组开头
             colorRecords.unshift({
                 x: x,
                 y: y,
@@ -764,12 +656,6 @@
                 hex: rgbToHex(r, g, b)
             });
 
-            // 如果超过最大记录数，则移除最旧的一项
-            if (colorRecords.length > MAX_RECORDS) {
-                colorRecords.pop();
-            }
-
-            // 更新显示
             updateColorList();
         }
 
@@ -806,14 +692,38 @@
                 colorItem.appendChild(deleteBtn);
                 colorList.appendChild(colorItem);
             });
+        }
 
-            recordCount.textContent = colorRecords.length;
+        // 更新矩形信息显示
+        function updateRectangleInfo() {
+            if (hasRectangle) {
+                const width = Math.abs(rectEndX - rectStartX);
+                const height = Math.abs(rectEndY - rectStartY);
+                
+                document.getElementById('rectStartX').textContent = rectStartX;
+                document.getElementById('rectStartY').textContent = rectStartY;
+                document.getElementById('rectEndX').textContent = rectEndX;
+                document.getElementById('rectEndY').textContent = rectEndY;
+                document.getElementById('rectWidth').textContent = width;
+                document.getElementById('rectHeight').textContent = height;
+                
+                rectangleInfo.style.display = 'block';
+            } else {
+                rectangleInfo.style.display = 'none';
+            }
         }
 
         // 清除所有记录
         clearAllBtn.addEventListener('click', () => {
             colorRecords = [];
             updateColorList();
+        });
+
+        // 清除矩形
+        clearRectBtn.addEventListener('click', () => {
+            hasRectangle = false;
+            rectangleInfo.style.display = 'none';
+            redrawCanvas();
         });
 
         // 复制所有颜色
@@ -846,8 +756,6 @@
 
         // 初始化
         updateColorList();
-
-        // 确保Canvas可以获取焦点
         colorCanvas.focus();
     </script>
 </body>
