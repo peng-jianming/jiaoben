@@ -88,7 +88,7 @@ class Mhxy {
             if(res3) {
                 console.log('活动已归位')
             } else {
-                console.log('归位活动')
+                console.log('归位活动')  
                 await this.左键点击({x: 574, y: 171});
             }
         } else {
