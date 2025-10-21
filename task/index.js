@@ -1,9 +1,11 @@
 const { 多点关联颜色匹配, 多点颜色匹配 } = require('../tools/colorMatching.js')
 const { 图片匹配 } = require('../tools/imageMatching.js')
-const { getScreen } = require('../touping.js')
-
+const { getScreen, 屏幕控制 } = require('../touping.js')
+const 配置 = require('./config.js')
 
 class Mhxy {
+    width = 2400
+    height = 1080
     flag = true
     hwnd = 0
     constructor(hwnd, changeProp) {
@@ -50,6 +52,48 @@ class Mhxy {
     async 多点颜色匹配(信息) {
         const url = await getScreen(this.hwnd)
         return 多点颜色匹配(信息.特征, url, 信息.相似度, 信息.区域)
+    }
+
+    async 左键点击(result) {
+        if(result) {
+            await 屏幕控制(this.hwnd, '0', String(result.x/this.width), String(result.y/this.height))
+            await 屏幕控制(this.hwnd, '2', String(result.x/this.width), String(result.y/this.height))
+        } else {
+            console.log('左键点击坐标为空');
+        }
+    }
+
+    async 滑动(result1, result2) {
+        if(result1 && result2) {
+            await 屏幕控制(this.hwnd, '0', String(result1.x/this.width), String(result1.y/this.height))
+            await 屏幕控制(this.hwnd, '1', String(result2.x/this.width), String(result2.y/this.height))
+            await 屏幕控制(this.hwnd, '2', String(result2.x/this.width), String(result2.y/this.height))
+        } else {
+            console.log('左键点击坐标为空');
+        }
+    }
+
+    async 打开活动弹框() {
+        const res1 = await this.多点关联颜色匹配(配置.活动按钮);
+        if(res1) {
+            console.log('打开活动弹框')
+            await this.左键点击(res1);
+            await this.延时(2, 0)  
+        }
+
+        const res2 = await this.多点颜色匹配(配置.活动界面);
+        if(res2) {
+            console.log('处于活动弹框')
+            const res3 = await this.多点颜色匹配(配置.日常活动激活状态);
+            if(res3) {
+                console.log('活动已归位')
+            } else {
+                console.log('归位活动')
+                await this.左键点击({x: 574, y: 171});
+            }
+        } else {
+            this.打开活动弹框();
+        }
     }
 }
 

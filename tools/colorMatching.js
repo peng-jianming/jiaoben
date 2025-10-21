@@ -218,7 +218,7 @@ async function 多点颜色匹配(colorPoints, imagePath, tolerance = 0.9, searc
 
             // 检查颜色是否匹配
             if (!颜色匹配(actualColor, targetColor, tolerance)) {
-                console.log(`坐标 (${x}, ${y}) 颜色不匹配`);
+                // console.log(`坐标 (${x}, ${y}) 颜色不匹配`);
                 allPointsMatch = false;
                 break;
             }

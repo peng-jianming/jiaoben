@@ -58,10 +58,30 @@ const getScreen = async (deviceIds) => {
         }
     })
 }
+const 屏幕控制 = async (deviceIds, mask, x, y) => {
+    return new Promise(resolve => {
+        const data = {
+            "action": "PointerEvent",
+            "comm": {
+                "deviceIds": deviceIds,
+                "mask": mask,
+                "x": x,
+                "y": y,
+                "endx": "0",
+                "endy": "0",
+                "delta": "0"
+            }
+        }
+
+        upstreamWS.send(JSON.stringify(data))
+        currentResolve = resolve
+    })
+}
 
 
 module.exports = {
     getList,
-    getScreen
+    getScreen,
+    屏幕控制
 };
 

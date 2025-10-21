@@ -244,6 +244,16 @@
         .btn-primary:hover {
             background: #5a7cff;
         }
+        
+        .rect-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .rect-actions .btn {
+            flex: 1;
+        }
     </style>
 </head>
 
@@ -283,9 +293,14 @@
                         <div style="margin-bottom: 8px;">终点: (<span id="rectEndX">0</span>, <span id="rectEndY">0</span>)</div>
                         <div style="margin-bottom: 8px;">宽度: <span id="rectWidth">0</span> px</div>
                         <div style="margin-bottom: 8px;">高度: <span id="rectHeight">0</span> px</div>
-                        <button class="btn" id="clearRectBtn" style="margin-top: 10px;">
-                            <span>🗑️</span> 清除矩形
-                        </button>
+                        <div class="rect-actions">
+                            <button class="btn" id="clearRectBtn">
+                                <span>🗑️</span> 清除矩形
+                            </button>
+                            <button class="btn btn-primary" id="copyRectColorsBtn">
+                                <span>📋</span> 复制矩形颜色
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -316,6 +331,7 @@
         const copyAllBtn = document.getElementById('copyAllBtn');
         const rectangleInfo = document.getElementById('rectangleInfo');
         const clearRectBtn = document.getElementById('clearRectBtn');
+        const copyRectColorsBtn = document.getElementById('copyRectColorsBtn');
 
         const ctx = colorCanvas.getContext('2d');
         const magnifierCtx = magnifierCanvas.getContext('2d');
@@ -740,6 +756,56 @@
 
             navigator.clipboard.writeText(textToCopy).then(() => {
                 alert('颜色记录已复制到剪贴板');
+            }).catch(err => {
+                console.error('复制失败: ', err);
+                alert('复制失败，请手动复制');
+            });
+        });
+
+        // 复制矩形区域所有颜色
+        copyRectColorsBtn.addEventListener('click', () => {
+            if (!hasRectangle) {
+                alert('请先框选一个矩形区域');
+                return;
+            }
+
+            const width = Math.abs(rectEndX - rectStartX);
+            const height = Math.abs(rectEndY - rectStartY);
+            
+            if (width * height > 10000) {
+                const confirmCopy = confirm(`矩形区域包含 ${width * height} 个像素，处理可能需要一些时间，是否继续？`);
+                if (!confirmCopy) return;
+            }
+
+            const colorsArray = [];
+            
+            // 确保起点在左上角，终点在右下角
+            const x1 = Math.min(rectStartX, rectEndX);
+            const y1 = Math.min(rectStartY, rectEndY);
+            const x2 = Math.max(rectStartX, rectEndX);
+            const y2 = Math.max(rectStartY, rectEndY);
+            
+            // 遍历矩形区域内的每个像素
+            for (let y = y1; y <= y2; y++) {
+                for (let x = x1; x <= x2; x++) {
+                    const pixelData = ctx.getImageData(x, y, 1, 1).data;
+                    const r = pixelData[0];
+                    const g = pixelData[1];
+                    const b = pixelData[2];
+                    
+                    colorsArray.push({
+                        颜色: `#${rgbToHex(r, g, b)}`,
+                        x: x,
+                        y: y
+                    });
+                }
+            }
+            
+            // 将数组转换为字符串并复制到剪贴板
+            const colorsString = JSON.stringify(colorsArray, null, 2);
+            
+            navigator.clipboard.writeText(colorsString).then(() => {
+                alert(`已复制矩形区域内 ${colorsArray.length} 个颜色数据到剪贴板`);
             }).catch(err => {
                 console.error('复制失败: ', err);
                 alert('复制失败，请手动复制');
