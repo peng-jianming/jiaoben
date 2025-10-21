@@ -124,7 +124,7 @@ module.exports = class StateMachine {
         if (this.onTickCallback) {
             await this.onTickCallback(state, this.lastState, isFirstTick);
         }
-
+        
         if (this.lastState !== state) {
             this.lastState = state;
             this._stopRunner();
@@ -135,7 +135,7 @@ module.exports = class StateMachine {
                     this._startTimeoutChecker(state, timeout);
                     if (tick === -Infinity) {
                         await subscriber();
-                        this._stopTimeoutChecker();
+                        // this._stopTimeoutChecker();
                     } else {
                         this._startRunner(subscriber, tick);
                     }
