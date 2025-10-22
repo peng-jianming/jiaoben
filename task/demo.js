@@ -9,6 +9,10 @@ class Demo extends Mhxy {
         super(hwnd, changeProp)
     }
     async start() {
+        // 执行任务的开始，不管目前处于哪一步，都是从头开始
+        // 出任何问题了，直接从头开始
+
+
         // const result = await this.多点关联颜色匹配(配置.活动按钮);
         // console.log(result, "=====");
         // if(result) {
@@ -19,29 +23,55 @@ class Demo extends Mhxy {
         // this.打开活动弹框()
         let num = 0
         const otherStateMachine = new StateMachine()
-            .on('state1', async () => {
-                console.log('state1 开始了')
-                otherStateMachine.currentState = 'state2'
-                await this.延时(3)
+            .on('进入主页面', async () => {
+                console.log('点击活动按钮')
+                otherStateMachine.currentState = '进入活动界面'
             }, 0, -Infinity)
-            .on('state2', () => {
-                throw new Error('112233');
-                otherStateMachine.currentState = 'state3' 
-                console.log('state2 开始了')
-            }, 4000, 1000)
-            .on('state3', () => {
-                console.log('state3 开始了')
-            }, 9000, 1000)
+            .on('进入活动界面', () => {
+                console.log('点击师门按钮')
+                otherStateMachine.currentState = '进入师门界面'
+            }, 5000, -Infinity)
+            .on('进入师门界面', () => {
+                console.log('点击开始任务')
+                otherStateMachine.currentState = '做师门任务'
+            }, 0, -Infinity)
+            .on('做师门任务', async () => {
+                console.log('正在做师门任务')
+                const aaa = new StateMachine(() => {
+                    // 记录标记()
+                    // if (师门召唤兽购买上交) {
+                    //     return '师门召唤兽购买上交'
+                    // }
+                    // if (找到右侧师门) {
+                    //     return '找到右侧师门'
+                    // }
+                    // if (不动检测()) {
+                    //     return '卡住了'
+                    // }
+                    return '卡住了'
+                })
+                    .on('找到右侧师门', async () => {
+                        console.log('点击右侧师门');
+                    }, 0, -Infinity)
+                    .on('师门召唤兽购买上交', async () => {
+                        console.log('购买召唤兽');
+                    }, 0, -Infinity)
+                    .on('卡住了', async () => {
+                        aaa.stop()
+                        otherStateMachine.currentState = '进入主页面'
+                    }, 0, -Infinity)
+
+
+                aaa.start(1000)
+
+            }, 0, -Infinity)
             .onTimeout((state) => {
-                // num += 1
                 console.log(state, '超时了')
+                otherStateMachine.currentState = '进入主页面'
             })
-            .onError((e) => {
-                console.log('错误了',e.message)
-            })
-        
+
         otherStateMachine.start(1000)
-        otherStateMachine.currentState = 'state1'
+        otherStateMachine.currentState = '进入主页面'
     }
 }
 
@@ -61,5 +91,12 @@ setTimeout(() => {
 // module.exports = Demo
 
 
+
+
+// 延时
+// 滑动
+// 随机点击
+// 偶尔失误点击
+// 制作透明图，然后获取剩余的颜色和坐标
 
 

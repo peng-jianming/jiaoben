@@ -47,9 +47,11 @@ class PromiseInterval {
                 try {
                     await promiseFun();
                 } catch (e) {
-                    this.stop();
-                    if (onError) onError(e);
-                    else throw e;
+                    if(this.timer !== undefined) {
+                        this.stop();
+                        if (onError) onError(e);
+                        else throw e;
+                    }
                 }
             }, this.ms);
         }
@@ -82,7 +84,7 @@ module.exports = class StateMachine {
     }
 
     _timeoutHandle(state) {
-        this.stop();
+        // this.stop();
         if (this.onTimeoutCallback) this.onTimeoutCallback(state);
         else throw new Error(`state: ${state} timeout`);
     }
@@ -138,7 +140,7 @@ module.exports = class StateMachine {
                     this._startTimeoutChecker(this.currentState, timeout);
                     if (tick === -Infinity) { 
                         await subscriber();
-                        this._stopTimeoutChecker();
+                        // this._stopTimeoutChecker();
                     } else {
                         this._startRunner(subscriber, tick);
                     }
