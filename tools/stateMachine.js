@@ -63,8 +63,9 @@ class PromiseInterval {
 
 module.exports = class StateMachine {
     constructor(publisher) {
-        this.publisher = publisher;
+        this.publisher = publisher || (() => {});
         this.lastState = undefined;
+        this.currentState = undefined;
         this.states = {};
         this.runners = [];
         this.timeoutChecker = [];
@@ -121,21 +122,23 @@ module.exports = class StateMachine {
 
     async _publish(isFirstTick) {
         const state = await this.publisher();
+        if(state) this.currentState = state
+
         if (this.onTickCallback) {
-            await this.onTickCallback(state, this.lastState, isFirstTick);
+            await this.onTickCallback(this.currentState, this.lastState, isFirstTick);
         }
-        
-        if (this.lastState !== state) {
-            this.lastState = state;
+
+        if (this.lastState !== this.currentState) {
+            this.lastState = this.currentState;
             this._stopRunner();
             this._stopTimeoutChecker();
 
-            if (this.states[state]) {
-                for (const [subscriber, timeout, tick] of this.states[state]) {
-                    this._startTimeoutChecker(state, timeout);
-                    if (tick === -Infinity) {
+            if (this.states[this.currentState]) {
+                for (const [subscriber, timeout, tick] of this.states[this.currentState]) {
+                    this._startTimeoutChecker(this.currentState, timeout);
+                    if (tick === -Infinity) { 
                         await subscriber();
-                        // this._stopTimeoutChecker();
+                        this._stopTimeoutChecker();
                     } else {
                         this._startRunner(subscriber, tick);
                     }
