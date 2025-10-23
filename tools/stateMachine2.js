@@ -47,9 +47,11 @@ class PromiseInterval {
                 try {
                     await promiseFun();
                 } catch (e) {
-                    this.stop();
-                    if (onError) onError(e);
-                    else throw e;
+                    if (this.timer !== undefined) {
+                        this.stop();
+                        if (onError) onError(e);
+                        else throw e;
+                    }
                 }
             }, this.ms);
         }
@@ -63,8 +65,9 @@ class PromiseInterval {
 
 module.exports = class StateMachine {
     constructor(publisher) {
-        this.publisher = publisher;
+        this.publisher = publisher || (() => { });
         this.lastState = undefined;
+        this.currentState = undefined;
         this.states = {};
         this.runners = [];
         this.timeoutChecker = [];
@@ -72,12 +75,6 @@ module.exports = class StateMachine {
         this.onTickCallback = undefined;
         this.onErrorCallback = undefined;
         this.onTimeoutCallback = undefined;
-        
-        // 新增：主动状态转移相关属性
-        this._pendingTransition = null;
-        this._isTransitioning = false;
-        this._transitionPromise = null;
-        this._transitionResolve = null;
     }
 
     _errorHandle(e) {
@@ -87,7 +84,7 @@ module.exports = class StateMachine {
     }
 
     _timeoutHandle(state) {
-        this.stop();
+        // this.stop();
         if (this.onTimeoutCallback) this.onTimeoutCallback(state);
         else throw new Error(`state: ${state} timeout`);
     }
@@ -125,155 +122,24 @@ module.exports = class StateMachine {
         this.runners = [];
     }
 
-    async _publish(isFirstTick) {
-        // 如果有待处理的状态转移，优先处理
-        if (this._pendingTransition) {
-            const targetState = this._pendingTransition;
-            this._pendingTransition = null;
-            
-            console.log(`主动状态转移: ${this.lastState} -> ${targetState}`);
-            
-            if (this.onTickCallback) {
-                await this.onTickCallback(targetState, this.lastState, isFirstTick);
-            }
-            
-            this.lastState = targetState;
-            this._stopRunner();
-            this._stopTimeoutChecker();
-
-            if (this.states[targetState]) {
-                for (const [subscriber, timeout, tick] of this.states[targetState]) {
-                    this._startTimeoutChecker(targetState, timeout);
-                    if (tick === -Infinity) { 
-                        await subscriber();
-                        this._stopTimeoutChecker();
-                    } else {
-                        this._startRunner(subscriber, tick);
-                    }
-                }
-            }
-            
-            // 解析转移承诺
-            if (this._transitionResolve) {
-                this._transitionResolve();
-                this._transitionResolve = null;
-                this._transitionPromise = null;
-                this._isTransitioning = false;
-            }
-            
-            return;
-        }
-
-        // 原有的状态检测逻辑
+    async _publish() {
         const state = await this.publisher();
-        if (this.onTickCallback) {
-            await this.onTickCallback(state, this.lastState, isFirstTick);
-        }
- 
-        if (this.lastState !== state) {
-            this.lastState = state;
-            this._stopRunner();
+        if (state) this.currentState = state
+
+        if (this.states[this.currentState]) {
+            this.lastState = this.currentState;
             this._stopTimeoutChecker();
-
-            if (this.states[state]) {
-                for (const [subscriber, timeout, tick] of this.states[state]) {
-                    this._startTimeoutChecker(state, timeout);
-                    if (tick === -Infinity) { 
-                        await subscriber();
-                        this._stopTimeoutChecker();
-                    } else {
-                        this._startRunner(subscriber, tick);
-                    }
-                }
+            for (const [subscriber, timeout] of this.states[this.currentState]) {
+                this._startTimeoutChecker(this.currentState, timeout);
+                this.currentState = ''
+                await subscriber();
             }
         }
     }
-
-    // 新增：主动状态转移方法
-    async transitionTo(targetState, timeout = 5000) {
-        if (this._isTransitioning) {
-            throw new Error('状态转移正在进行中，请等待完成');
-        }
-
-        this._isTransitioning = true;
-        this._pendingTransition = targetState;
-        
-        // 创建转移承诺
-        this._transitionPromise = new Promise((resolve, reject) => {
-            this._transitionResolve = resolve;
-            
-            // 设置转移超时
-            if (timeout > 0) {
-                setTimeout(() => {
-                    if (this._isTransitioning) {
-                        this._isTransitioning = false;
-                        this._pendingTransition = null;
-                        this._transitionPromise = null;
-                        this._transitionResolve = null;
-                        reject(new Error(`状态转移超时: ${targetState}`));
-                    }
-                }, timeout);
-            }
-        });
-
-        // 立即触发状态发布以处理转移
-        await this._publish(false);
-        
-        return this._transitionPromise;
-    }
-
-    // 新增：强制状态转移（不等待处理完成）
-    forceTransitionTo(targetState) {
-        this._pendingTransition = targetState;
-        this._isTransitioning = false;
-        this._transitionPromise = null;
-        this._transitionResolve = null;
-        
-        // 立即触发状态发布
-        this._publish(false).catch(error => {
-            console.error('强制状态转移失败:', error);
-        });
-    }
-
-    // 新增：获取当前状态
-    getCurrentState() {
-        return this.lastState;
-    }
-
-    // 新增：检查是否在特定状态
-    isInState(state) {
-        return this.lastState === state;
-    }
-
-    // 新增：等待特定状态
-    async waitForState(targetState, timeout = 30000) {
-        if (this.lastState === targetState) {
-            return true;
-        }
-
-        return new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                reject(new Error(`等待状态超时: ${targetState}`));
-            }, timeout);
-
-            const originalTickCallback = this.onTickCallback;
-            this.onTickCallback = async (state, lastState, isFirstTick) => {
-                if (originalTickCallback) {
-                    await originalTickCallback(state, lastState, isFirstTick);
-                }
-                
-                if (state === targetState) {
-                    clearTimeout(timeoutId);
-                    this.onTickCallback = originalTickCallback;
-                    resolve(true);
-                }
-            };
-        });
-    }
-
-    on(state, stateMachineOrSubscriber, timeout = 0, tick = 200) {
+    // 默认timeout:0,没有超时限制,
+    on(state, stateMachineOrSubscriber, timeout = 0) {
         if (!this.states[state]) this.states[state] = [];
-        this.states[state].push([stateMachineOrSubscriber, timeout, tick]);
+        this.states[state].push([stateMachineOrSubscriber, timeout]);
         return this;
     }
 
@@ -313,14 +179,71 @@ module.exports = class StateMachine {
         if (this.mainLoop) this.mainLoop.stop();
         this._stopRunner();
         this._stopTimeoutChecker();
-        
-        // 清理转移相关状态
-        this._isTransitioning = false;
-        this._pendingTransition = null;
-        if (this._transitionResolve) {
-            this._transitionResolve();
-            this._transitionResolve = null;
-        }
-        this._transitionPromise = null;
     }
 }
+
+
+
+     // 执行任务的开始，不管目前处于哪一步，都是从头开始
+        // 出任何问题了，直接从头开始
+
+
+        // 以轮询为主,轮询有返回的状态,不管注册函数里面是否有设置状态,都根据轮询返回的状态为主
+        // 轮询无返回状态,注册函数里面设置了状态,那么就根据注册函数里面设置的状态跑
+        // 轮询无返回状态,注册函数里面也没有设置状态,那么就会一直轮询,导致脚本卡住,函数里面有没有注册状态的情况,需要有超时时间
+        // const otherStateMachine = new StateMachine(() => {
+        //     console.log('111111111', otherStateMachine.currentState);
+        //     // return otherStateMachine.currentState;
+        //     // return '进入主页面'
+        // })
+        //     .on('进入主页面', async () => {
+        //         console.log('点击活动按钮')
+        //         // otherStateMachine.currentState = '进入活动界面'
+        //         // await this.延时(5,0)
+        //     })
+        //     .on('进入活动界面', () => {
+        //         console.log('点击师门按钮')
+        //         otherStateMachine.currentState = '进入师门界面'
+        //     })
+        //     .on('进入师门界面', () => {
+        //         console.log('点击开始任务')
+        //         // otherStateMachine.currentState = '进入师门界面'
+        //     })
+        //     .on('做师门任务', async () => {
+        //         console.log('正在做师门任务')
+        //         const aaa = new StateMachine(() => {
+        //             // 记录标记()
+        //             // if (师门召唤兽购买上交) {
+        //             //     return '师门召唤兽购买上交'
+        //             // }
+        //             // if (找到右侧师门) {
+        //             //     return '找到右侧师门'
+        //             // }
+        //             // if (不动检测()) {
+        //             //     return '卡住了'
+        //             // }
+        //             return '卡住了'
+        //         })
+        //             .on('找到右侧师门', async () => {
+        //                 console.log('点击右侧师门');
+        //             })
+        //             .on('师门召唤兽购买上交', async () => {
+        //                 console.log('购买召唤兽');
+        //             })
+        //             .on('卡住了', async () => {
+        //                 aaa.stop()
+        //                 console.log('卡住了');
+        //                 otherStateMachine.currentState = '进入主页面'
+        //             })
+
+
+        //         aaa.start(1000)
+
+        //     })
+        //     .onTimeout((state) => {
+        //         console.log(state, '超时了')
+        //         otherStateMachine.currentState = '进入主页面'
+        //     })
+
+        // otherStateMachine.start(1000)
+        // otherStateMachine.currentState = '进入主页面'

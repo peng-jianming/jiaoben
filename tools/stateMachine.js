@@ -148,8 +148,8 @@ module.exports = class StateMachine {
             }
         }
     }
-
-    on(state, stateMachineOrSubscriber, timeout = 0, tick = 200) {
+    // 默认timeout:0,没有超时限制,  tick:-Infinity, 同步运行
+    on(state, stateMachineOrSubscriber, timeout = 0, tick = -Infinity) {
         if (!this.states[state]) this.states[state] = [];
         this.states[state].push([stateMachineOrSubscriber, timeout, tick]);
         return this;

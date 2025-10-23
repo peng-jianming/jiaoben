@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片颜色选择与透明化工具</title>
+    <style>
+        /* 样式保持不变 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #3498db, #2c3e50);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .control-panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .image-panel {
+            flex: 2;
+            min-width: 500px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        button.secondary {
+            background-color: #2c3e50;
+        }
+        
+        button.secondary:hover {
+            background-color: #1a252f;
+        }
+        
+        button.success {
+            background-color: #27ae60;
+        }
+        
+        button.success:hover {
+            background-color: #219653;
+        }
+        
+        button.info {
+            background-color: #17a2b8;
+        }
+        
+        button.info:hover {
+            background-color: #138496;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #dcdde1;
+            outline: none;
+        }
+        
+        .tolerance-value {
+            display: inline-block;
+            width: 40px;
+            text-align: center;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        .color-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .color-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+        }
+        
+        .selected-colors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .color-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+        
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+        
+        .canvas-container {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            overflow: auto;
+            position: relative;
+        }
+        
+        canvas {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            cursor: crosshair;
+            background-image: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        .instructions {
+            background-color: #e8f4fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .history-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            border-top: 1px solid #ecf0f1;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .control-panel, .image-panel {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>图片颜色选择与透明化工具</h1>
+            <p class="subtitle">使用Ctrl+点击选择颜色区域，支持多次选择和撤销操作</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="control-group">
+                    <h2>图片操作</h2>
+                    <div class="button-group">
+                        <button id="uploadBtn">
+                            <i class="icon">📁</i> 上传图片
+                        </button>
+                        <button id="resetBtn" disabled>
+                            <i class="icon">🔄</i> 重置图片
+                        </button>
+                        <button id="downloadBtn" disabled class="success">
+                            <i class="icon">💾</i> 下载结果
+                        </button>
+                        <button id="copyAllColorsBtn" class="info">
+                            <i class="icon">📋</i> 复制所有非透明颜色
+                        </button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="toleranceInput">
+                            颜色容差: <span id="toleranceValue" class="tolerance-value">10</span>
+                        </label>
+                        <input type="range" id="toleranceInput" min="0" max="100" value="10">
+                    </div>
+                    
+                    <div class="color-preview">
+                        <label>当前选中颜色:</label>
+                        <div id="currentColor" class="color-box"></div>
+                    </div>
+                    
+                    <div class="history-controls">
+                        <button id="undoBtn" disabled class="secondary">
+                            <i class="icon">↶</i> 撤销 (Ctrl+Z)
+                        </button>
+                        <button id="clearColorsBtn" disabled class="secondary">
+                            <i class="icon">🗑️</i> 清除所有颜色
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h2>已选颜色</h2>
+                    <div id="selectedColors" class="selected-colors">
+                        <!-- 颜色标记将动态添加到这里 -->
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3>使用说明</h3>
+                    <ul>
+                        <li>上传一张图片</li>
+                        <li>按住 <strong>Ctrl</strong> 并点击图片选择要保留的颜色</li>
+                        <li>调整颜色容差以控制颜色匹配的范围</li>
+                        <li>可以多次选择不同的颜色</li>
+                        <li>点击颜色标记可以移除该颜色</li>
+                        <li>使用 <strong>Ctrl+Z</strong> 或撤销按钮可以撤销上一步操作</li>
+                        <li>点击"下载结果"保存处理后的图片</li>
+                        <li>点击"复制所有非透明颜色"获取当前图片上所有非透明颜色的数据</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="image-panel">
+                <h2>图片预览</h2>
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div id="status" class="status"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 图片颜色选择工具 | 使用 Canvas 和 JavaScript 构建</p>
+        </footer>
+    </div>
+
+    <script>
+        // 全局变量
+        let originalImage = null;
+        let processedImage = null;
+        let selectedColors = [];
+        let colorHistory = [];
+        let currentTolerance = 10;
+        let canvas, ctx;
+        let fileInput; // 添加文件输入变量
+        let scaleX = 1, scaleY = 1; // 用于坐标缩放计算
+        
+        // DOM元素
+        const uploadBtn = document.getElementById('uploadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyAllColorsBtn = document.getElementById('copyAllColorsBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const clearColorsBtn = document.getElementById('clearColorsBtn');
+        const toleranceInput = document.getElementById('toleranceInput');
+        const toleranceValue = document.getElementById('toleranceValue');
+        const currentColor = document.getElementById('currentColor');
+        const selectedColorsContainer = document.getElementById('selectedColors');
+        const statusDiv = document.getElementById('status');
+        const canvasElement = document.getElementById('canvas');
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            canvas = canvasElement;
+            ctx = canvas.getContext('2d');
+            
+            // 创建隐藏的文件输入元素
+            createHiddenFileInput();
+            
+            // 事件监听
+            uploadBtn.addEventListener('click', triggerFileUpload);
+            resetBtn.addEventListener('click', resetImage);
+            downloadBtn.addEventListener('click', downloadImage);
+            copyAllColorsBtn.addEventListener('click', copyAllNonTransparentColors);
+            undoBtn.addEventListener('click', undoLastAction);
+            clearColorsBtn.addEventListener('click', clearAllColors);
+            toleranceInput.addEventListener('input', updateTolerance);
+            canvas.addEventListener('click', handleCanvasClick);
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // 初始化颜色预览
+            currentColor.style.backgroundColor = 'transparent';
+        });
+        
+        // 创建隐藏的文件输入元素
+        function createHiddenFileInput() {
+            fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            fileInput.addEventListener('change', handleFileUpload);
+            document.body.appendChild(fileInput);
+        }
+        
+        // 触发文件上传
+        function triggerFileUpload() {
+            fileInput.click();
+        }
+        
+        // 处理文件上传
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // 设置canvas尺寸
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+                    let { width, height } = calculateAspectRatio(img.width, img.height, maxWidth, maxHeight);
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // 计算缩放比例
+                    const rect = canvas.getBoundingClientRect();
+                    scaleX = canvas.width / rect.width;
+                    scaleY = canvas.height / rect.height;
+                    
+                    // 绘制图片到canvas
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // 保存原始图片数据
+                    originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // 保存初始状态到历史记录
+                    saveStateToHistory();
+                    
+                    // 启用按钮
+                    resetBtn.disabled = false;
+                    clearColorsBtn.disabled = false;
+                    
+                    showStatus('图片上传成功！按住Ctrl并点击图片选择颜色', 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 计算宽高比
+        function calculateAspectRatio(srcWidth, srcHeight, maxWidth, maxHeight) {
+            const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+            return {
+                width: srcWidth * ratio,
+                height: srcHeight * ratio
+            };
+        }
+        
+        // 处理canvas点击事件
+        function handleCanvasClick(event) {
+            if (!originalImage || !event.ctrlKey) return;
+            
+            // 获取点击位置的坐标（考虑缩放比例）
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) * scaleX);
+            const y = Math.floor((event.clientY - rect.top) * scaleY);
+            
+            // 确保坐标在画布范围内
+            if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+            
+            // 获取像素颜色
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            
+            // 检查是否点击了透明区域
+            if (pixel[3] === 0) {
+                showStatus('无法选择透明区域，请选择有颜色的区域', 'error');
+                return;
+            }
+            
+            const color = {
+                r: pixel[0],
+                g: pixel[1],
+                b: pixel[2],
+                x: x,
+                y: y,
+                id: Date.now() // 使用时间戳作为唯一ID
+            };
+            
+            // 检查颜色是否已经存在
+            const colorExists = selectedColors.some(c => 
+                c.r === color.r && c.g === color.g && c.b === color.b
+            );
+            
+            if (!colorExists) {
+                // 添加新颜色
+                selectedColors.push(color);
+                
+                // 更新颜色预览
+                updateColorPreview();
+                
+                // 处理图片
+                processImageWithSelectedColors();
+                
+                // 保存状态到历史记录
+                saveStateToHistory();
+                
+                showStatus(`已添加颜色: RGB(${color.r}, ${color.g}, ${color.b})`, 'success');
+            } else {
+                showStatus('该颜色已被选择', 'error');
+            }
+        }
+        
+        // 更新颜色预览
+        function updateColorPreview() {
+            // 更新当前颜色预览
+            if (selectedColors.length > 0) {
+                const lastColor = selectedColors[selectedColors.length - 1];
+                currentColor.style.backgroundColor = `rgb(${lastColor.r}, ${lastColor.g}, ${lastColor.b})`;
+            } else {
+                currentColor.style.backgroundColor = 'transparent';
+            }
+            
+            // 更新已选颜色列表
+            selectedColorsContainer.innerHTML = '';
+            selectedColors.forEach(color => {
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+                
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'color-swatch';
+                colorSwatch.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+                colorSwatch.title = `RGB(${color.r}, ${color.g}, ${color.b}) 位置: (${color.x}, ${color.y})`;
+                colorSwatch.addEventListener('click', () => removeColor(color.id));
+                
+                colorItem.appendChild(colorSwatch);
+                selectedColorsContainer.appendChild(colorItem);
+            });
+        }
+        
+        // 移除颜色
+        function removeColor(colorId) {
+            selectedColors = selectedColors.filter(color => color.id !== colorId);
+            updateColorPreview();
+            processImageWithSelectedColors();
+            saveStateToHistory();
+            showStatus('颜色已移除', 'success');
+        }
+        
+        // 使用选中的颜色处理图片
+        function processImageWithSelectedColors() {
+            if (!originalImage || selectedColors.length === 0) {
+                // 如果没有选择颜色，显示原始图片
+                ctx.putImageData(originalImage, 0, 0);
+                processedImage = null;
+                downloadBtn.disabled = true;
+                return;
+            }
+            
+            try {
+                const imageData = originalImage;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // 创建新的ImageData用于处理后的图片
+                const newImageData = new ImageData(width, height);
+                
+                // 遍历所有像素
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    const r = imageData.data[i];
+                    const g = imageData.data[i + 1];
+                    const b = imageData.data[i + 2];
+                    const a = imageData.data[i + 3];
+                    
+                    // 检查像素颜色是否与任何选中颜色匹配（考虑容差）
+                    let colorMatch = false;
+                    
+                    for (const selectedColor of selectedColors) {
+                        if (isColorMatch(r, g, b, selectedColor.r, selectedColor.g, selectedColor.b, currentTolerance)) {
+                            colorMatch = true;
+                            break;
+                        }
+                    }
+                    
+                    if (colorMatch) {
+                        // 保留匹配的颜色
+                        newImageData.data[i] = r;
+                        newImageData.data[i + 1] = g;
+                        newImageData.data[i + 2] = b;
+                        newImageData.data[i + 3] = a;
+                    } else {
+                        // 将不匹配的颜色设为透明
+                        newImageData.data[i] = 0;
+                        newImageData.data[i + 1] = 0;
+                        newImageData.data[i + 2] = 0;
+                        newImageData.data[i + 3] = 0;
+                    }
+                }
+                
+                // 绘制处理后的图片到canvas
+                ctx.putImageData(newImageData, 0, 0);
+                
+                // 保存处理后的图片数据
+                processedImage = newImageData;
+                
+                // 启用下载按钮
+                downloadBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('图片处理错误:', error);
+                showStatus('图片处理失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 检查颜色是否匹配（考虑容差）
+        function isColorMatch(r1, g1, b1, r2, g2, b2, tolerance) {
+            return Math.abs(r1 - r2) <= tolerance && 
+                   Math.abs(g1 - g2) <= tolerance && 
+                   Math.abs(b1 - b2) <= tolerance;
+        }
+        
+        // 更新容差值
+        function updateTolerance() {
+            currentTolerance = parseInt(toleranceInput.value);
+            toleranceValue.textContent = currentTolerance;
+            
+            // 如果已经有选中的颜色，重新处理图片
+            if (selectedColors.length > 0) {
+                processImageWithSelectedColors();
+                saveStateToHistory();
+            }
+        }
+        
+        // 保存状态到历史记录
+        function saveStateToHistory() {
+            // 只保存最近10个状态
+            if (colorHistory.length >= 10) {
+                colorHistory.shift();
+            }
+            
+            // 保存当前状态
+            colorHistory.push({
+                selectedColors: [...selectedColors],
+                imageData: ctx.getImageData(0, 0, canvas.width, canvas.height)
+            });
+            
+            // 更新撤销按钮状态
+            undoBtn.disabled = colorHistory.length <= 1;
+        }
+        
+        // 撤销上一步操作
+        function undoLastAction() {
+            if (colorHistory.length <= 1) return;
+            
+            // 移除当前状态
+            colorHistory.pop();
+            
+            // 恢复到上一个状态
+            const previousState = colorHistory[colorHistory.length - 1];
+            selectedColors = [...previousState.selectedColors];
+            
+            // 恢复图片
+            ctx.putImageData(previousState.imageData, 0, 0);
+            
+            // 更新UI
+            updateColorPreview();
+            
+            // 更新撤销按钮状态
+            undoBtn.disabled = colorHistory.length <= 1;
+            
+            // 更新下载按钮状态
+            downloadBtn.disabled = selectedColors.length === 0;
+            
+            showStatus('已撤销上一步操作', 'success');
+        }
+        
+        // 清除所有颜色
+        function clearAllColors() {
+            selectedColors = [];
+            updateColorPreview();
+            processImageWithSelectedColors();
+            saveStateToHistory();
+            showStatus('所有颜色已清除', 'success');
+        }
+        
+        // 重置图片到原始状态
+        function resetImage() {
+            if (originalImage) {
+                ctx.putImageData(originalImage, 0, 0);
+                selectedColors = [];
+                colorHistory = [];
+                updateColorPreview();
+                downloadBtn.disabled = true;
+                undoBtn.disabled = true;
+                saveStateToHistory();
+                showStatus('图片已重置', 'success');
+            }
+        }
+        
+        // 下载处理后的图片
+        function downloadImage() {
+            if (!processedImage) return;
+            
+            // 创建一个临时canvas用于下载
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = processedImage.width;
+            tempCanvas.height = processedImage.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(processedImage, 0, 0);
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.download = 'processed-image.png';
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+            
+            showStatus('图片下载已开始', 'success');
+        }
+        
+        // 复制所有非透明颜色数据
+        function copyAllNonTransparentColors() {
+            if (!originalImage) {
+                showStatus('请先上传图片', 'error');
+                return;
+            }
+            
+            try {
+                // 获取当前画布的像素数据
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // 收集所有非透明像素
+                const nonTransparentPixels = [];
+                
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const index = (y * width + x) * 4;
+                        const r = imageData.data[index];
+                        const g = imageData.data[index + 1];
+                        const b = imageData.data[index + 2];
+                        const a = imageData.data[index + 3];
+                        
+                        // 如果像素不透明，则添加到结果中
+                        if (a > 0) {
+                            const hexColor = rgbToHex(r, g, b);
+                            nonTransparentPixels.push({
+                                颜色: hexColor,
+                                x: x,
+                                y: y
+                            });
+                        }
+                    }
+                }
+                
+                if (nonTransparentPixels.length === 0) {
+                    showStatus('没有找到非透明像素', 'error');
+                    return;
+                }
+                
+                // 转换为指定格式的字符串
+                const colorData = nonTransparentPixels.map(pixel => 
+                    `{ 颜色: "${pixel.颜色}", x: ${pixel.x}, y: ${pixel.y} }`
+                );
+                
+                const arrayString = `[${colorData.join(', ')}]`;
+                
+                // 复制到剪贴板
+                navigator.clipboard.writeText(arrayString).then(() => {
+                    showStatus(`已复制 ${nonTransparentPixels.length} 个非透明像素数据到剪贴板`, 'success');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    showStatus('复制失败，请手动复制数据', 'error');
+                    
+                    // 如果剪贴板API不可用，显示数据供用户手动复制
+                    const textArea = document.createElement('textarea');
+                    textArea.value = arrayString;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showStatus('已尝试手动复制数据到剪贴板', 'success');
+                });
+                
+            } catch (error) {
+                console.error('获取非透明像素错误:', error);
+                showStatus('获取非透明像素失败: ' + error.message, 'error');
+            }
+        }
+        
+        // RGB转十六进制
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        // 处理键盘事件
+        function handleKeyDown(event) {
+            // Ctrl+Z 撤销
+            if (event.ctrlKey && event.key === 'z') {
+                event.preventDefault();
+                undoLastAction();
+            }
+        }
+        
+        // 显示状态信息
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status';
+            
+            if (type === 'success') {
+                statusDiv.classList.add('success');
+            } else if (type === 'error') {
+                statusDiv.classList.add('error');
+            }
+            
+            // 3秒后清除状态信息
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
