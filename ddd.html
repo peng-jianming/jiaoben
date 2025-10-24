@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图像颜色拾取与透明处理工具</title>
+    <title>图像颜色拾取与透明化工具</title>
     <style>
-        /* 保持所有样式不变 */
+        /* 主工具样式 */
         * {
             margin: 0;
             padding: 0;
@@ -116,8 +115,8 @@
         }
 
         .magnifier {
-            width: 160px;
-            height: 160px;
+            width: 210px;
+            height: 210px;
             border: 2px solid white;
             overflow: hidden;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.8);
@@ -136,7 +135,7 @@
             border-radius: 4px;
             font-size: 0.8rem;
             text-align: center;
-            max-width: 160px;
+            max-width: 210px;
         }
 
         .color-list {
@@ -245,147 +244,260 @@
             background: #5a7cff;
         }
         
-        .btn-success {
-            background: #27ae60;
-        }
-        
-        .btn-success:hover {
-            background: #219653;
-        }
-        
         .rect-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-top: 10px;
         }
         
         .rect-actions .btn {
             flex: 1;
+            min-width: 120px;
         }
-        
-        /* 透明处理工具样式 */
-        .transparent-tool {
+
+        /* 透明化工具弹窗样式 */
+        .transparency-modal {
             display: none;
-            max-width: 1200px;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .transparency-content {
+            position: relative;
+            background: white;
+            margin: 50px auto;
+            padding: 0;
             border-radius: 15px;
+            max-width: 1200px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            font-weight: bold;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .close-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* 透明化工具专用样式 - 完全独立的作用域 */
+        #transparency-tool {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #transparency-tool * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        #transparency-tool .tt-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        #transparency-tool .tt-header {
+            background: linear-gradient(90deg, #3498db, #2c3e50);
+            color: white;
             padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            margin-top: 20px;
-        }
-        
-        .transparent-header {
             text-align: center;
-            margin-bottom: 25px;
         }
-        
-        .transparent-header h2 {
-            font-size: 2rem;
+
+        #transparency-tool .tt-header h1 {
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
-        
-        .main-content {
+
+        #transparency-tool .tt-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        #transparency-tool .tt-main-content {
             display: flex;
             flex-wrap: wrap;
+            padding: 20px;
             gap: 20px;
         }
-        
-        .control-panel {
+
+        #transparency-tool .tt-control-panel {
             flex: 1;
             min-width: 300px;
-            background: rgba(0, 0, 0, 0.2);
+            background-color: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
-        
-        .image-panel {
+
+        #transparency-tool .tt-image-panel {
             flex: 2;
             min-width: 500px;
-            background: rgba(0, 0, 0, 0.2);
+            background-color: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        
-        .control-group {
+
+        #transparency-tool .tt-control-group {
             margin-bottom: 25px;
         }
-        
-        .control-group h3 {
-            color: #fff;
+
+        #transparency-tool .tt-control-group h2 {
+            color: #2c3e50;
             margin-bottom: 15px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #4a6cf7;
+            border-bottom: 2px solid #3498db;
         }
-        
-        .button-group {
+
+        #transparency-tool .tt-button-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 20px;
         }
-        
-        .input-group {
+
+        #transparency-tool .tt-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #transparency-tool .tt-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #transparency-tool .tt-button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #transparency-tool .tt-button-secondary {
+            background-color: #2c3e50;
+        }
+
+        #transparency-tool .tt-button-secondary:hover {
+            background-color: #1a252f;
+        }
+
+        #transparency-tool .tt-button-success {
+            background-color: #27ae60;
+        }
+
+        #transparency-tool .tt-button-success:hover {
+            background-color: #219653;
+        }
+
+        #transparency-tool .tt-button-info {
+            background-color: #17a2b8;
+        }
+
+        #transparency-tool .tt-button-info:hover {
+            background-color: #138496;
+        }
+
+        #transparency-tool .tt-input-group {
             margin-bottom: 15px;
         }
-        
-        .input-group label {
+
+        #transparency-tool .tt-label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #fff;
+            color: #2c3e50;
         }
-        
-        .input-group input[type="range"] {
+
+        #transparency-tool .tt-range-input {
             width: 100%;
             height: 8px;
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
+            background: #dcdde1;
             outline: none;
         }
-        
-        .tolerance-value {
+
+        #transparency-tool .tt-tolerance-value {
             display: inline-block;
             width: 40px;
             text-align: center;
             font-weight: bold;
-            color: #4a6cf7;
+            color: #3498db;
         }
-        
-        .color-preview {
+
+        #transparency-tool .tt-color-preview {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 15px;
         }
-        
-        .color-box {
+
+        #transparency-tool .tt-color-box {
             width: 40px;
             height: 40px;
             border-radius: 5px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
+            border: 2px solid #ddd;
         }
-        
-        .selected-colors {
+
+        #transparency-tool .tt-selected-colors {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 15px;
         }
-        
-        .color-item-transparent {
+
+        #transparency-tool .tt-color-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 5px;
         }
-        
-        .color-swatch {
+
+        #transparency-tool .tt-color-swatch {
             width: 30px;
             height: 30px;
             border-radius: 50%;
@@ -393,94 +505,143 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             cursor: pointer;
         }
-        
-        .color-swatch:hover {
+
+        #transparency-tool .tt-color-swatch:hover {
             transform: scale(1.1);
         }
-        
-        .transparent-canvas-container {
+
+        #transparency-tool .tt-canvas-container {
             width: 100%;
             max-width: 800px;
             margin-top: 20px;
-            background: rgba(255, 255, 255, 0.1);
+            background-color: white;
             border-radius: 10px;
             padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: center;
             overflow: auto;
+            position: relative;
         }
-        
-        #transparentCanvas {
-            max-width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+
+        #transparency-tool .tt-canvas {
+            border: 1px solid #ddd;
             cursor: crosshair;
             background-image: 
-                linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%), 
-                linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.1) 75%), 
-                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.1) 75%);
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
             background-size: 20px 20px;
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
-        
-        .instructions {
-            background: rgba(255, 255, 255, 0.1);
+
+        #transparency-tool .tt-instructions {
+            background-color: #e8f4fd;
             border-radius: 10px;
             padding: 20px;
             margin-top: 20px;
-            border-left: 4px solid #4a6cf7;
+            border-left: 4px solid #3498db;
         }
-        
-        .instructions h4 {
-            color: #fff;
+
+        #transparency-tool .tt-instructions h3 {
+            color: #2c3e50;
             margin-bottom: 10px;
         }
-        
-        .instructions ul {
+
+        #transparency-tool .tt-instructions ul {
             padding-left: 20px;
         }
-        
-        .instructions li {
+
+        #transparency-tool .tt-instructions li {
             margin-bottom: 8px;
-            color: rgba(255, 255, 255, 0.8);
         }
-        
-        .status {
+
+        #transparency-tool .tt-status {
             padding: 15px;
             border-radius: 5px;
             margin-top: 20px;
             font-weight: bold;
             text-align: center;
         }
-        
-        .status.success {
-            background: rgba(39, 174, 96, 0.3);
-            color: #fff;
-            border: 1px solid rgba(39, 174, 96, 0.5);
+
+        #transparency-tool .tt-status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
-        
-        .status.error {
-            background: rgba(231, 76, 60, 0.3);
-            color: #fff;
-            border: 1px solid rgba(231, 76, 60, 0.5);
+
+        #transparency-tool .tt-status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
-        
-        .history-controls {
+
+        #transparency-tool .tt-history-controls {
             display: flex;
             gap: 10px;
             margin-top: 15px;
         }
-        
-        .back-button {
+
+        #transparency-tool .tt-magnifier-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             margin-top: 20px;
+            width: 100%;
+        }
+
+        #transparency-tool .tt-magnifier-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        #transparency-tool .tt-magnifier-box {
+            width: 210px;
+            height: 210px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background: #333;
+        }
+
+        #transparency-tool .tt-magnifier-canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        #transparency-tool .tt-magnifier-info {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
             text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            max-width: 210px;
+        }
+
+        @media (max-width: 768px) {
+            #transparency-tool .tt-main-content {
+                flex-direction: column;
+            }
+            
+            #transparency-tool .tt-control-panel, 
+            #transparency-tool .tt-image-panel {
+                min-width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- 图像颜色拾取工具 -->
-    <div class="container" id="colorPickerTool">
+    <div class="container">
         <header>
             <h1>图像颜色拾取工具</h1>
         </header>
@@ -522,9 +683,8 @@
                             <button class="btn btn-primary" id="copyRectColorsBtn">
                                 <span>📋</span> 复制矩形颜色
                             </button>
-                            <!-- 新增透明处理按钮 -->
-                            <button class="btn btn-success" id="transparentProcessBtn">
-                                <span>🎨</span> 透明处理
+                            <button class="btn btn-primary" id="transparencyToolBtn" style="background: #27ae60;">
+                                <span>🎨</span> 透明化处理工具
                             </button>
                         </div>
                     </div>
@@ -545,91 +705,14 @@
         </div>
     </div>
 
-    <!-- 透明处理工具 -->
-    <div class="transparent-tool" id="transparentTool">
-        <div class="transparent-header">
-            <h2>图像透明处理工具</h2>
-            <p>使用Ctrl+点击选择颜色区域，支持多次选择和撤销操作</p>
-        </div>
-        
-        <div class="main-content">
-            <div class="control-panel">
-                <div class="control-group">
-                    <h3>图片操作</h3>
-                    <div class="button-group">
-                        <button id="resetTransparentBtn" class="btn">
-                            <span>🔄</span> 重置图片
-                        </button>
-                        <button id="downloadTransparentBtn" class="btn btn-primary">
-                            <span>💾</span> 下载结果
-                        </button>
-                        <button id="copyAllTransparentColorsBtn" class="btn btn-primary">
-                            <span>📋</span> 复制所有非透明颜色
-                        </button>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="toleranceInput">
-                            颜色容差: <span id="toleranceValue" class="tolerance-value">10</span>
-                        </label>
-                        <input type="range" id="toleranceInput" min="0" max="100" value="10">
-                    </div>
-                    
-                    <div class="color-preview">
-                        <label>当前选中颜色:</label>
-                        <div id="currentTransparentColor" class="color-box"></div>
-                    </div>
-                    
-                    <div class="history-controls">
-                        <button id="undoTransparentBtn" class="btn">
-                            <span>↶</span> 撤销 (Ctrl+Z)
-                        </button>
-                        <button id="clearTransparentColorsBtn" class="btn">
-                            <span>🗑️</span> 清除所有颜色
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <h3>已选颜色</h3>
-                    <div id="selectedTransparentColors" class="selected-colors">
-                        <!-- 颜色标记将动态添加到这里 -->
-                    </div>
-                </div>
-                
-                <div class="instructions">
-                    <h4>使用说明</h4>
-                    <ul>
-                        <li>按住 <strong>Ctrl</strong> 并点击图片选择要保留的颜色</li>
-                        <li>调整颜色容差以控制颜色匹配的范围</li>
-                        <li>可以多次选择不同的颜色</li>
-                        <li>点击颜色标记可以移除该颜色</li>
-                        <li>使用 <strong>Ctrl+Z</strong> 或撤销按钮可以撤销上一步操作</li>
-                        <li>点击"下载结果"保存处理后的图片</li>
-                        <li>点击"复制所有非透明颜色"获取当前图片上所有非透明颜色的数据</li>
-                    </ul>
-                </div>
-                
-                <div class="back-button">
-                    <button id="backToColorPicker" class="btn">
-                        <span>←</span> 返回颜色拾取工具
-                    </button>
-                </div>
-            </div>
-            
-            <div class="image-panel">
-                <h3>图片预览</h3>
-                <div class="transparent-canvas-container">
-                    <canvas id="transparentCanvas" tabindex="0"></canvas>
-                </div>
-                <div id="transparentStatus" class="status"></div>
-            </div>
+    <!-- 透明化工具弹窗 -->
+    <div id="transparencyModal" class="transparency-modal">
+        <div class="transparency-content" id="transparencyContent">
+            <!-- 透明化工具内容将通过JavaScript动态插入 -->
         </div>
     </div>
 
     <script>
-        // ========== 图像颜色拾取工具代码 ==========
-        
         // 获取DOM元素
         const imageUpload = document.getElementById('imageUpload');
         const uploadArea = document.getElementById('uploadArea');
@@ -642,7 +725,9 @@
         const rectangleInfo = document.getElementById('rectangleInfo');
         const clearRectBtn = document.getElementById('clearRectBtn');
         const copyRectColorsBtn = document.getElementById('copyRectColorsBtn');
-        const transparentProcessBtn = document.getElementById('transparentProcessBtn');
+        const transparencyToolBtn = document.getElementById('transparencyToolBtn');
+        const transparencyModal = document.getElementById('transparencyModal');
+        const transparencyContent = document.getElementById('transparencyContent');
 
         const ctx = colorCanvas.getContext('2d');
         const magnifierCtx = magnifierCanvas.getContext('2d');
@@ -938,23 +1023,27 @@
                 }
             }
 
+            // 绘制中心像素的边框
             const centerX = halfGrid * PIXEL_SIZE;
             const centerY = halfGrid * PIXEL_SIZE;
             magnifierCtx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
             magnifierCtx.lineWidth = 2;
             magnifierCtx.strokeRect(centerX, centerY, PIXEL_SIZE, PIXEL_SIZE);
 
+            // 绘制十字准线
             magnifierCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             magnifierCtx.lineWidth = 1;
 
+            // 垂直准线 - 通过中心像素的中间
             magnifierCtx.beginPath();
-            magnifierCtx.moveTo(MAGNIFIER_SIZE / 2, 0);
-            magnifierCtx.lineTo(MAGNIFIER_SIZE / 2, MAGNIFIER_SIZE);
+            magnifierCtx.moveTo(centerX + PIXEL_SIZE/2, 0);
+            magnifierCtx.lineTo(centerX + PIXEL_SIZE/2, MAGNIFIER_SIZE);
             magnifierCtx.stroke();
 
+            // 水平准线 - 通过中心像素的中间
             magnifierCtx.beginPath();
-            magnifierCtx.moveTo(0, MAGNIFIER_SIZE / 2);
-            magnifierCtx.lineTo(MAGNIFIER_SIZE, MAGNIFIER_SIZE / 2);
+            magnifierCtx.moveTo(0, centerY + PIXEL_SIZE/2);
+            magnifierCtx.lineTo(MAGNIFIER_SIZE, centerY + PIXEL_SIZE/2);
             magnifierCtx.stroke();
 
             const pixelData = ctx.getImageData(x, y, 1, 1).data;
@@ -1123,38 +1212,683 @@
             });
         });
 
-        // 透明处理按钮事件
-        transparentProcessBtn.addEventListener('click', () => {
+        // 透明化处理工具按钮点击事件
+        transparencyToolBtn.addEventListener('click', () => {
             if (!hasRectangle) {
                 alert('请先框选一个矩形区域');
                 return;
             }
 
-            // 确保起点在左上角，终点在右下角
+            // 获取矩形区域的图像数据
             const x1 = Math.min(rectStartX, rectEndX);
             const y1 = Math.min(rectStartY, rectEndY);
             const x2 = Math.max(rectStartX, rectEndX);
             const y2 = Math.max(rectStartY, rectEndY);
-
             const width = x2 - x1;
             const height = y2 - y1;
 
-            // 创建一个临时canvas来提取矩形区域
+            // 创建临时canvas获取矩形区域图像
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = width;
             tempCanvas.height = height;
             const tempCtx = tempCanvas.getContext('2d');
-
-            // 将矩形区域的图像绘制到临时canvas
             tempCtx.drawImage(colorCanvas, x1, y1, width, height, 0, 0, width, height);
 
-            // 切换到透明处理工具
-            document.getElementById('colorPickerTool').style.display = 'none';
-            document.getElementById('transparentTool').style.display = 'block';
+            // 将矩形区域转换为DataURL
+            const imageDataURL = tempCanvas.toDataURL('image/png');
 
-            // 初始化透明处理工具
-            initTransparentTool(tempCanvas);
+            // 加载透明化工具
+            loadTransparencyTool(imageDataURL, width, height);
         });
+
+        // 加载透明化工具
+        function loadTransparencyTool(imageDataURL, width, height) {
+            // 清空之前的内容
+            transparencyContent.innerHTML = '';
+            
+            // 创建关闭按钮
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'close-btn';
+            closeBtn.innerHTML = '×';
+            closeBtn.addEventListener('click', () => {
+                transparencyModal.style.display = 'none';
+            });
+            
+            // 创建透明化工具容器
+            const transparencyTool = document.createElement('div');
+            transparencyTool.id = 'transparency-tool';
+            
+            // 插入透明化工具的HTML结构
+            transparencyTool.innerHTML = `
+                <div class="tt-container">
+                    <div class="tt-header">
+                        <h1>图片颜色选择与透明化工具</h1>
+                        <p class="tt-subtitle">使用Ctrl+点击选择颜色区域，支持多次选择和撤销操作</p>
+                    </div>
+                    
+                    <div class="tt-main-content">
+                        <div class="tt-control-panel">
+                            <div class="tt-control-group">
+                                <h2>图片操作</h2>
+                                <div class="tt-button-group">
+                                    <button id="tt-resetBtn" class="tt-button">
+                                        <i class="icon">🔄</i> 重置图片
+                                    </button>
+                                    <button id="tt-downloadBtn" class="tt-button tt-button-success">
+                                        <i class="icon">💾</i> 下载结果
+                                    </button>
+                                    <button id="tt-copyAllColorsBtn" class="tt-button tt-button-info">
+                                        <i class="icon">📋</i> 复制所有非透明颜色
+                                    </button>
+                                </div>
+                                
+                                <div class="tt-input-group">
+                                    <label for="tt-toleranceInput" class="tt-label">
+                                        颜色容差: <span id="tt-toleranceValue" class="tt-tolerance-value">10</span>
+                                    </label>
+                                    <input type="range" id="tt-toleranceInput" class="tt-range-input" min="0" max="100" value="10">
+                                </div>
+                                
+                                <div class="tt-color-preview">
+                                    <label class="tt-label">当前选中颜色:</label>
+                                    <div id="tt-currentColor" class="tt-color-box"></div>
+                                </div>
+                                
+                                <div class="tt-history-controls">
+                                    <button id="tt-undoBtn" class="tt-button tt-button-secondary">
+                                        <i class="icon">↶</i> 撤销 (Ctrl+Z)
+                                    </button>
+                                    <button id="tt-clearColorsBtn" class="tt-button tt-button-secondary">
+                                        <i class="icon">🗑️</i> 清除所有颜色
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="tt-control-group">
+                                <h2>已选颜色</h2>
+                                <div id="tt-selectedColors" class="tt-selected-colors">
+                                    <!-- 颜色标记将动态添加到这里 -->
+                                </div>
+                            </div>
+                            
+                            <div class="tt-instructions">
+                                <h3>使用说明</h3>
+                                <ul>
+                                    <li>按住 <strong>Ctrl</strong> 并点击图片选择要保留的颜色</li>
+                                    <li>调整颜色容差以控制颜色匹配的范围</li>
+                                    <li>可以多次选择不同的颜色</li>
+                                    <li>点击颜色标记可以移除该颜色</li>
+                                    <li>使用 <strong>Ctrl+Z</strong> 或撤销按钮可以撤销上一步操作</li>
+                                    <li>点击"下载结果"保存处理后的图片</li>
+                                    <li>点击"复制所有非透明颜色"获取当前图片上所有非透明颜色的数据</li>
+                                    <li><strong>新增:</strong> 鼠标移动到图片上可查看放大镜效果</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="tt-image-panel">
+                            <h2>图片预览 (${width} × ${height})</h2>
+                            <div class="tt-canvas-container">
+                                <canvas id="tt-canvas" class="tt-canvas"></canvas>
+                            </div>
+                            
+                            <!-- 放大镜区域 - 与主工具保持一致 -->
+                            <div class="tt-magnifier-container">
+                                <div class="tt-magnifier-title">放大镜 (11×11像素)</div>
+                                <div class="tt-magnifier-box">
+                                    <canvas id="tt-magnifierCanvas" class="tt-magnifier-canvas"></canvas>
+                                </div>
+                                <div class="tt-magnifier-info">坐标: (0,0)</div>
+                            </div>
+                            
+                            <div id="tt-status" class="tt-status"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加关闭按钮和内容到弹窗
+            transparencyContent.appendChild(closeBtn);
+            transparencyContent.appendChild(transparencyTool);
+            
+            // 显示弹窗
+            transparencyModal.style.display = 'block';
+            
+            // 初始化透明化工具
+            initTransparencyTool(imageDataURL, width, height);
+        }
+
+        // 初始化透明化工具
+        function initTransparencyTool(imageDataURL, originalWidth, originalHeight) {
+            // 透明化工具的全局变量
+            let originalImage = null;
+            let processedImage = null;
+            let selectedColors = [];
+            let colorHistory = [];
+            let currentTolerance = 10;
+            let canvas, ctx;
+            let magnifierCanvas, magnifierCtx;
+            let scaleX = 1, scaleY = 1;
+            
+            // 放大镜常量 - 与主工具保持一致
+            const MAGNIFIER_SIZE = 210;
+            const GRID_SIZE = 11;
+            const PIXEL_SIZE = MAGNIFIER_SIZE / GRID_SIZE;
+
+            // 获取透明化工具的DOM元素
+            const resetBtn = document.getElementById('tt-resetBtn');
+            const downloadBtn = document.getElementById('tt-downloadBtn');
+            const copyAllColorsBtn = document.getElementById('tt-copyAllColorsBtn');
+            const undoBtn = document.getElementById('tt-undoBtn');
+            const clearColorsBtn = document.getElementById('tt-clearColorsBtn');
+            const toleranceInput = document.getElementById('tt-toleranceInput');
+            const toleranceValue = document.getElementById('tt-toleranceValue');
+            const currentColor = document.getElementById('tt-currentColor');
+            const selectedColorsContainer = document.getElementById('tt-selectedColors');
+            const statusDiv = document.getElementById('tt-status');
+            const canvasElement = document.getElementById('tt-canvas');
+            const magnifierCanvasElement = document.getElementById('tt-magnifierCanvas');
+            const magnifierInfoElement = document.querySelector('#transparency-tool .tt-magnifier-info');
+
+            // 初始化透明化工具
+            canvas = canvasElement;
+            ctx = canvas.getContext('2d');
+            
+            // 初始化放大镜canvas - 与主工具保持一致
+            magnifierCanvas = magnifierCanvasElement;
+            magnifierCtx = magnifierCanvas.getContext('2d');
+            magnifierCanvas.width = MAGNIFIER_SIZE;
+            magnifierCanvas.height = MAGNIFIER_SIZE;
+            
+            // 事件监听
+            resetBtn.addEventListener('click', resetImage);
+            downloadBtn.addEventListener('click', downloadImage);
+            copyAllColorsBtn.addEventListener('click', copyAllNonTransparentColors);
+            undoBtn.addEventListener('click', undoLastAction);
+            clearColorsBtn.addEventListener('click', clearAllColors);
+            toleranceInput.addEventListener('input', updateTolerance);
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseleave', handleCanvasMouseLeave);
+            document.addEventListener('keydown', handleKeyDown);
+            
+            // 初始化颜色预览
+            currentColor.style.backgroundColor = 'transparent';
+            
+            // 加载图片 - 保持原始尺寸
+            const img = new Image();
+            img.onload = function() {
+                // 设置canvas尺寸为原始尺寸
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                // 绘制图片到canvas - 保持原始尺寸
+                ctx.drawImage(img, 0, 0);
+                
+                // 保存原始图片数据
+                originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // 保存初始状态到历史记录
+                saveStateToHistory();
+                
+                // 启用按钮
+                resetBtn.disabled = false;
+                clearColorsBtn.disabled = false;
+                
+                showStatus('图片已加载！按住Ctrl并点击图片选择颜色', 'success');
+            };
+            img.src = imageDataURL;
+
+            // 处理canvas鼠标移动事件
+            function handleCanvasMouseMove(event) {
+                if (!originalImage) return;
+                
+                // 获取鼠标位置的坐标（考虑缩放比例）
+                const rect = canvas.getBoundingClientRect();
+                scaleX = canvas.width / rect.width;
+                scaleY = canvas.height / rect.height;
+                const x = Math.floor((event.clientX - rect.left) * scaleX);
+                const y = Math.floor((event.clientY - rect.top) * scaleY);
+                
+                // 确保坐标在画布范围内
+                if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+                
+                // 更新放大镜显示
+                updateMagnifier(x, y);
+            }
+
+            // 处理canvas鼠标离开事件
+            function handleCanvasMouseLeave() {
+                // 清除放大镜内容
+                magnifierCtx.clearRect(0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+                magnifierInfoElement.textContent = '坐标: (0,0)';
+            }
+
+            // 更新放大镜显示 - 与主工具保持一致
+            function updateMagnifier(x, y) {
+                const halfGrid = Math.floor(GRID_SIZE / 2);
+                const startX = x - halfGrid;
+                const startY = y - halfGrid;
+
+                magnifierCtx.clearRect(0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+
+                for (let i = 0; i < GRID_SIZE; i++) {
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        const pixelX = startX + i;
+                        const pixelY = startY + j;
+
+                        if (pixelX >= 0 && pixelX < canvas.width &&
+                            pixelY >= 0 && pixelY < canvas.height) {
+                            const pixelData = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+                            const r = pixelData[0];
+                            const g = pixelData[1];
+                            const b = pixelData[2];
+                            magnifierCtx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                            magnifierCtx.fillRect(i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                        } else {
+                            magnifierCtx.fillStyle = '#666';
+                            magnifierCtx.fillRect(i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                        }
+
+                        magnifierCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                        magnifierCtx.lineWidth = 0.5;
+                        magnifierCtx.strokeRect(i * PIXEL_SIZE, j * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+                    }
+                }
+
+                // 绘制中心像素的边框
+                const centerX = halfGrid * PIXEL_SIZE;
+                const centerY = halfGrid * PIXEL_SIZE;
+                magnifierCtx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                magnifierCtx.lineWidth = 2;
+                magnifierCtx.strokeRect(centerX, centerY, PIXEL_SIZE, PIXEL_SIZE);
+
+                // 绘制十字准线
+                magnifierCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                magnifierCtx.lineWidth = 1;
+
+                // 垂直准线 - 通过中心像素的中间
+                magnifierCtx.beginPath();
+                magnifierCtx.moveTo(centerX + PIXEL_SIZE/2, 0);
+                magnifierCtx.lineTo(centerX + PIXEL_SIZE/2, MAGNIFIER_SIZE);
+                magnifierCtx.stroke();
+
+                // 水平准线 - 通过中心像素的中间
+                magnifierCtx.beginPath();
+                magnifierCtx.moveTo(0, centerY + PIXEL_SIZE/2);
+                magnifierCtx.lineTo(MAGNIFIER_SIZE, centerY + PIXEL_SIZE/2);
+                magnifierCtx.stroke();
+
+                const pixelData = ctx.getImageData(x, y, 1, 1).data;
+                const r = pixelData[0];
+                const g = pixelData[1];
+                const b = pixelData[2];
+                magnifierInfoElement.innerHTML = `坐标: (${x},${y}) <br/> 颜色: #${rgbToHex(r, g, b)}`;
+            }
+
+            // 处理canvas点击事件
+            function handleCanvasClick(event) {
+                if (!originalImage || !event.ctrlKey) return;
+                
+                // 获取点击位置的坐标（考虑缩放比例）
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor((event.clientX - rect.left) * scaleX);
+                const y = Math.floor((event.clientY - rect.top) * scaleY);
+                
+                // 确保坐标在画布范围内
+                if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+                
+                // 获取像素颜色
+                const pixel = ctx.getImageData(x, y, 1, 1).data;
+                
+                // 检查是否点击了透明区域
+                if (pixel[3] === 0) {
+                    showStatus('无法选择透明区域，请选择有颜色的区域', 'error');
+                    return;
+                }
+                
+                const color = {
+                    r: pixel[0],
+                    g: pixel[1],
+                    b: pixel[2],
+                    x: x,
+                    y: y,
+                    id: Date.now() // 使用时间戳作为唯一ID
+                };
+                
+                // 检查颜色是否已经存在
+                const colorExists = selectedColors.some(c => 
+                    c.r === color.r && c.g === color.g && c.b === color.b
+                );
+                
+                if (!colorExists) {
+                    // 添加新颜色
+                    selectedColors.push(color);
+                    
+                    // 更新颜色预览
+                    updateColorPreview();
+                    
+                    // 处理图片
+                    processImageWithSelectedColors();
+                    
+                    // 保存状态到历史记录
+                    saveStateToHistory();
+                    
+                    showStatus(`已添加颜色: RGB(${color.r}, ${color.g}, ${color.b})`, 'success');
+                } else {
+                    showStatus('该颜色已被选择', 'error');
+                }
+            }
+
+            // 更新颜色预览
+            function updateColorPreview() {
+                // 更新当前颜色预览
+                if (selectedColors.length > 0) {
+                    const lastColor = selectedColors[selectedColors.length - 1];
+                    currentColor.style.backgroundColor = `rgb(${lastColor.r}, ${lastColor.g}, ${lastColor.b})`;
+                } else {
+                    currentColor.style.backgroundColor = 'transparent';
+                }
+                
+                // 更新已选颜色列表
+                selectedColorsContainer.innerHTML = '';
+                selectedColors.forEach(color => {
+                    const colorItem = document.createElement('div');
+                    colorItem.className = 'tt-color-item';
+                    
+                    const colorSwatch = document.createElement('div');
+                    colorSwatch.className = 'tt-color-swatch';
+                    colorSwatch.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+                    colorSwatch.title = `RGB(${color.r}, ${color.g}, ${color.b}) 位置: (${color.x}, ${color.y})`;
+                    colorSwatch.addEventListener('click', () => removeColor(color.id));
+                    
+                    colorItem.appendChild(colorSwatch);
+                    selectedColorsContainer.appendChild(colorItem);
+                });
+            }
+
+            // 移除颜色
+            function removeColor(colorId) {
+                selectedColors = selectedColors.filter(color => color.id !== colorId);
+                updateColorPreview();
+                processImageWithSelectedColors();
+                saveStateToHistory();
+                showStatus('颜色已移除', 'success');
+            }
+
+            // 使用选中的颜色处理图片
+            function processImageWithSelectedColors() {
+                if (!originalImage || selectedColors.length === 0) {
+                    // 如果没有选择颜色，显示原始图片
+                    ctx.putImageData(originalImage, 0, 0);
+                    processedImage = null;
+                    downloadBtn.disabled = true;
+                    return;
+                }
+                
+                try {
+                    const imageData = originalImage;
+                    const width = imageData.width;
+                    const height = imageData.height;
+                    
+                    // 创建新的ImageData用于处理后的图片
+                    const newImageData = new ImageData(width, height);
+                    
+                    // 遍历所有像素
+                    for (let i = 0; i < imageData.data.length; i += 4) {
+                        const r = imageData.data[i];
+                        const g = imageData.data[i + 1];
+                        const b = imageData.data[i + 2];
+                        const a = imageData.data[i + 3];
+                        
+                        // 检查像素颜色是否与任何选中颜色匹配（考虑容差）
+                        let colorMatch = false;
+                        
+                        for (const selectedColor of selectedColors) {
+                            if (isColorMatch(r, g, b, selectedColor.r, selectedColor.g, selectedColor.b, currentTolerance)) {
+                                colorMatch = true;
+                                break;
+                            }
+                        }
+                        
+                        if (colorMatch) {
+                            // 保留匹配的颜色
+                            newImageData.data[i] = r;
+                            newImageData.data[i + 1] = g;
+                            newImageData.data[i + 2] = b;
+                            newImageData.data[i + 3] = a;
+                        } else {
+                            // 将不匹配的颜色设为透明
+                            newImageData.data[i] = 0;
+                            newImageData.data[i + 1] = 0;
+                            newImageData.data[i + 2] = 0;
+                            newImageData.data[i + 3] = 0;
+                        }
+                    }
+                    
+                    // 绘制处理后的图片到canvas
+                    ctx.putImageData(newImageData, 0, 0);
+                    
+                    // 保存处理后的图片数据
+                    processedImage = newImageData;
+                    
+                    // 启用下载按钮
+                    downloadBtn.disabled = false;
+                    
+                } catch (error) {
+                    console.error('图片处理错误:', error);
+                    showStatus('图片处理失败: ' + error.message, 'error');
+                }
+            }
+
+            // 检查颜色是否匹配（考虑容差）
+            function isColorMatch(r1, g1, b1, r2, g2, b2, tolerance) {
+                return Math.abs(r1 - r2) <= tolerance && 
+                       Math.abs(g1 - g2) <= tolerance && 
+                       Math.abs(b1 - b2) <= tolerance;
+            }
+
+            // 更新容差值
+            function updateTolerance() {
+                currentTolerance = parseInt(toleranceInput.value);
+                toleranceValue.textContent = currentTolerance;
+                
+                // 如果已经有选中的颜色，重新处理图片
+                if (selectedColors.length > 0) {
+                    processImageWithSelectedColors();
+                    saveStateToHistory();
+                }
+            }
+
+            // 保存状态到历史记录
+            function saveStateToHistory() {
+                // 只保存最近10个状态
+                if (colorHistory.length >= 10) {
+                    colorHistory.shift();
+                }
+                
+                // 保存当前状态
+                colorHistory.push({
+                    selectedColors: [...selectedColors],
+                    imageData: ctx.getImageData(0, 0, canvas.width, canvas.height)
+                });
+                
+                // 更新撤销按钮状态
+                undoBtn.disabled = colorHistory.length <= 1;
+            }
+
+            // 撤销上一步操作
+            function undoLastAction() {
+                if (colorHistory.length <= 1) return;
+                
+                // 移除当前状态
+                colorHistory.pop();
+                
+                // 恢复到上一个状态
+                const previousState = colorHistory[colorHistory.length - 1];
+                selectedColors = [...previousState.selectedColors];
+                
+                // 恢复图片
+                ctx.putImageData(previousState.imageData, 0, 0);
+                
+                // 更新UI
+                updateColorPreview();
+                
+                // 更新撤销按钮状态
+                undoBtn.disabled = colorHistory.length <= 1;
+                
+                // 更新下载按钮状态
+                downloadBtn.disabled = selectedColors.length === 0;
+                
+                showStatus('已撤销上一步操作', 'success');
+            }
+
+            // 清除所有颜色
+            function clearAllColors() {
+                selectedColors = [];
+                updateColorPreview();
+                processImageWithSelectedColors();
+                saveStateToHistory();
+                showStatus('所有颜色已清除', 'success');
+            }
+
+            // 重置图片到原始状态
+            function resetImage() {
+                if (originalImage) {
+                    ctx.putImageData(originalImage, 0, 0);
+                    selectedColors = [];
+                    colorHistory = [];
+                    updateColorPreview();
+                    downloadBtn.disabled = true;
+                    undoBtn.disabled = true;
+                    saveStateToHistory();
+                    showStatus('图片已重置', 'success');
+                }
+            }
+
+            // 下载处理后的图片
+            function downloadImage() {
+                if (!processedImage) return;
+                
+                // 创建一个临时canvas用于下载
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = processedImage.width;
+                tempCanvas.height = processedImage.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(processedImage, 0, 0);
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = 'processed-image.png';
+                link.href = tempCanvas.toDataURL('image/png');
+                link.click();
+                
+                showStatus('图片下载已开始', 'success');
+            }
+
+            // 复制所有非透明颜色数据
+            function copyAllNonTransparentColors() {
+                if (!originalImage) {
+                    showStatus('请先上传图片', 'error');
+                    return;
+                }
+                
+                try {
+                    // 获取当前画布的像素数据
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const width = imageData.width;
+                    const height = imageData.height;
+                    
+                    // 收集所有非透明像素
+                    const nonTransparentPixels = [];
+                    
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const index = (y * width + x) * 4;
+                            const r = imageData.data[index];
+                            const g = imageData.data[index + 1];
+                            const b = imageData.data[index + 2];
+                            const a = imageData.data[index + 3];
+                            
+                            // 如果像素不透明，则添加到结果中
+                            if (a > 0) {
+                                const hexColor = rgbToHex(r, g, b);
+                                nonTransparentPixels.push({
+                                    颜色: hexColor,
+                                    x: x,
+                                    y: y
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (nonTransparentPixels.length === 0) {
+                        showStatus('没有找到非透明像素', 'error');
+                        return;
+                    }
+                    
+                    // 转换为指定格式的字符串
+                    const colorData = nonTransparentPixels.map(pixel => 
+                        `{ 颜色: "${pixel.颜色}", x: ${pixel.x}, y: ${pixel.y} }`
+                    );
+                    
+                    const arrayString = `[${colorData.join(', ')}]`;
+                    
+                    // 复制到剪贴板
+                    navigator.clipboard.writeText(arrayString).then(() => {
+                        showStatus(`已复制 ${nonTransparentPixels.length} 个非透明像素数据到剪贴板`, 'success');
+                    }).catch(err => {
+                        console.error('复制失败:', err);
+                        showStatus('复制失败，请手动复制数据', 'error');
+                        
+                        // 如果剪贴板API不可用，显示数据供用户手动复制
+                        const textArea = document.createElement('textarea');
+                        textArea.value = arrayString;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        showStatus('已尝试手动复制数据到剪贴板', 'success');
+                    });
+                    
+                } catch (error) {
+                    console.error('获取非透明像素错误:', error);
+                    showStatus('获取非透明像素失败: ' + error.message, 'error');
+                }
+            }
+
+            // RGB转十六进制
+            function rgbToHex(r, g, b) {
+                return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            }
+
+            // 处理键盘事件
+            function handleKeyDown(event) {
+                // Ctrl+Z 撤销
+                if (event.ctrlKey && event.key === 'z') {
+                    event.preventDefault();
+                    undoLastAction();
+                }
+            }
+
+            // 显示状态信息
+            function showStatus(message, type) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'tt-status';
+                
+                if (type === 'success') {
+                    statusDiv.classList.add('tt-status-success');
+                } else if (type === 'error') {
+                    statusDiv.classList.add('tt-status-error');
+                }
+                
+                // 3秒后清除状态信息
+                setTimeout(() => {
+                    statusDiv.textContent = '';
+                    statusDiv.className = 'tt-status';
+                }, 3000);
+            }
+        }
 
         // RGB转十六进制
         function rgbToHex(r, g, b) {
@@ -1164,483 +1898,10 @@
             }).join('');
         }
 
-        // ========== 透明处理工具代码 ==========
-        
-        // 透明处理工具变量
-        let transparentOriginalImage = null;
-        let transparentProcessedImage = null;
-        let transparentSelectedColors = [];
-        let transparentColorHistory = [];
-        let transparentCurrentTolerance = 10;
-        let transparentCanvas, transparentCtx;
-        let transparentScaleX = 1, transparentScaleY = 1;
-        
-        // 透明处理工具DOM元素
-        const resetTransparentBtn = document.getElementById('resetTransparentBtn');
-        const downloadTransparentBtn = document.getElementById('downloadTransparentBtn');
-        const copyAllTransparentColorsBtn = document.getElementById('copyAllTransparentColorsBtn');
-        const undoTransparentBtn = document.getElementById('undoTransparentBtn');
-        const clearTransparentColorsBtn = document.getElementById('clearTransparentColorsBtn');
-        const toleranceTransparentInput = document.getElementById('toleranceInput');
-        const toleranceTransparentValue = document.getElementById('toleranceValue');
-        const currentTransparentColor = document.getElementById('currentTransparentColor');
-        const selectedTransparentColorsContainer = document.getElementById('selectedTransparentColors');
-        const transparentStatusDiv = document.getElementById('transparentStatus');
-        const transparentCanvasElement = document.getElementById('transparentCanvas');
-        const backToColorPickerBtn = document.getElementById('backToColorPicker');
-        
-        // 初始化透明处理工具
-        function initTransparentTool(sourceCanvas) {
-            transparentCanvas = transparentCanvasElement;
-            transparentCtx = transparentCanvas.getContext('2d');
-            
-            // 重置透明处理工具状态
-            transparentSelectedColors = [];
-            transparentColorHistory = [];
-            transparentCurrentTolerance = 10;
-            transparentProcessedImage = null;
-            
-            // 设置canvas尺寸与源canvas相同
-            transparentCanvas.width = sourceCanvas.width;
-            transparentCanvas.height = sourceCanvas.height;
-            
-            // 绘制源图像到透明处理canvas
-            transparentCtx.drawImage(sourceCanvas, 0, 0);
-            
-            // 保存原始图片数据
-            transparentOriginalImage = transparentCtx.getImageData(0, 0, transparentCanvas.width, transparentCanvas.height);
-            
-            // 重置UI状态
-            updateTransparentColorPreview();
-            toleranceTransparentInput.value = 10;
-            toleranceTransparentValue.textContent = '10';
-            downloadTransparentBtn.disabled = true;
-            undoTransparentBtn.disabled = true;
-            
-            // 保存初始状态到历史记录
-            saveTransparentStateToHistory();
-            
-            // 显示状态信息
-            showTransparentStatus('矩形区域已加载！按住Ctrl并点击图片选择颜色', 'success');
-            
-            // 计算缩放比例
-            const rect = transparentCanvas.getBoundingClientRect();
-            transparentScaleX = transparentCanvas.width / rect.width;
-            transparentScaleY = transparentCanvas.height / rect.height;
-            
-            // 确保canvas可以获取焦点
-            transparentCanvas.focus();
-        }
-        
-        // 透明处理工具事件监听
-        function initTransparentEventListeners() {
-            // 移除之前的事件监听器（避免重复绑定）
-            transparentCanvas.removeEventListener('click', handleTransparentCanvasClick);
-            resetTransparentBtn.removeEventListener('click', resetTransparentImage);
-            downloadTransparentBtn.removeEventListener('click', downloadTransparentImage);
-            copyAllTransparentColorsBtn.removeEventListener('click', copyAllNonTransparentColors);
-            undoTransparentBtn.removeEventListener('click', undoTransparentLastAction);
-            clearTransparentColorsBtn.removeEventListener('click', clearAllTransparentColors);
-            toleranceTransparentInput.removeEventListener('input', updateTransparentTolerance);
-            backToColorPickerBtn.removeEventListener('click', backToColorPicker);
-            
-            // 重新绑定事件
-            transparentCanvas.addEventListener('click', handleTransparentCanvasClick);
-            resetTransparentBtn.addEventListener('click', resetTransparentImage);
-            downloadTransparentBtn.addEventListener('click', downloadTransparentImage);
-            copyAllTransparentColorsBtn.addEventListener('click', copyAllNonTransparentColors);
-            undoTransparentBtn.addEventListener('click', undoTransparentLastAction);
-            clearTransparentColorsBtn.addEventListener('click', clearAllTransparentColors);
-            toleranceTransparentInput.addEventListener('input', updateTransparentTolerance);
-            backToColorPickerBtn.addEventListener('click', backToColorPicker);
-            
-            // 添加键盘事件监听
-            document.addEventListener('keydown', handleTransparentKeyDown);
-        }
-        
-        // 初始化事件监听器
-        initTransparentEventListeners();
-        
-        // 处理透明处理canvas点击事件
-        function handleTransparentCanvasClick(event) {
-            if (!transparentOriginalImage) return;
-            
-            // 检查是否按下了Ctrl键
-            if (!event.ctrlKey) {
-                showTransparentStatus('请按住Ctrl键并点击图片选择颜色', 'error');
-                return;
-            }
-            
-            // 获取点击位置的坐标（考虑缩放比例）
-            const rect = transparentCanvas.getBoundingClientRect();
-            const x = Math.floor((event.clientX - rect.left) * transparentScaleX);
-            const y = Math.floor((event.clientY - rect.top) * transparentScaleY);
-            
-            // 确保坐标在画布范围内
-            if (x < 0 || x >= transparentCanvas.width || y < 0 || y >= transparentCanvas.height) return;
-            
-            // 获取像素颜色
-            const pixel = transparentCtx.getImageData(x, y, 1, 1).data;
-            
-            // 检查是否点击了透明区域
-            if (pixel[3] === 0) {
-                showTransparentStatus('无法选择透明区域，请选择有颜色的区域', 'error');
-                return;
-            }
-            
-            const color = {
-                r: pixel[0],
-                g: pixel[1],
-                b: pixel[2],
-                x: x,
-                y: y,
-                id: Date.now() // 使用时间戳作为唯一ID
-            };
-            
-            // 检查颜色是否已经存在
-            const colorExists = transparentSelectedColors.some(c => 
-                c.r === color.r && c.g === color.g && c.b === color.b
-            );
-            
-            if (!colorExists) {
-                // 添加新颜色
-                transparentSelectedColors.push(color);
-                
-                // 更新颜色预览
-                updateTransparentColorPreview();
-                
-                // 处理图片
-                processTransparentImageWithSelectedColors();
-                
-                // 保存状态到历史记录
-                saveTransparentStateToHistory();
-                
-                showTransparentStatus(`已添加颜色: RGB(${color.r}, ${color.g}, ${color.b})`, 'success');
-            } else {
-                showTransparentStatus('该颜色已被选择', 'error');
-            }
-        }
-        
-        // 更新透明处理颜色预览
-        function updateTransparentColorPreview() {
-            // 更新当前颜色预览
-            if (transparentSelectedColors.length > 0) {
-                const lastColor = transparentSelectedColors[transparentSelectedColors.length - 1];
-                currentTransparentColor.style.backgroundColor = `rgb(${lastColor.r}, ${lastColor.g}, ${lastColor.b})`;
-            } else {
-                currentTransparentColor.style.backgroundColor = 'transparent';
-            }
-            
-            // 更新已选颜色列表
-            selectedTransparentColorsContainer.innerHTML = '';
-            transparentSelectedColors.forEach(color => {
-                const colorItem = document.createElement('div');
-                colorItem.className = 'color-item-transparent';
-                
-                const colorSwatch = document.createElement('div');
-                colorSwatch.className = 'color-swatch';
-                colorSwatch.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
-                colorSwatch.title = `RGB(${color.r}, ${color.g}, ${color.b}) 位置: (${color.x}, ${color.y})`;
-                colorSwatch.addEventListener('click', () => removeTransparentColor(color.id));
-                
-                colorItem.appendChild(colorSwatch);
-                selectedTransparentColorsContainer.appendChild(colorItem);
-            });
-        }
-        
-        // 移除透明处理颜色
-        function removeTransparentColor(colorId) {
-            transparentSelectedColors = transparentSelectedColors.filter(color => color.id !== colorId);
-            updateTransparentColorPreview();
-            processTransparentImageWithSelectedColors();
-            saveTransparentStateToHistory();
-            showTransparentStatus('颜色已移除', 'success');
-        }
-        
-        // 使用选中的颜色处理透明图片
-        function processTransparentImageWithSelectedColors() {
-            if (!transparentOriginalImage || transparentSelectedColors.length === 0) {
-                // 如果没有选择颜色，显示原始图片
-                transparentCtx.putImageData(transparentOriginalImage, 0, 0);
-                transparentProcessedImage = null;
-                downloadTransparentBtn.disabled = true;
-                return;
-            }
-            
-            try {
-                const imageData = transparentOriginalImage;
-                const width = imageData.width;
-                const height = imageData.height;
-                
-                // 创建新的ImageData用于处理后的图片
-                const newImageData = new ImageData(width, height);
-                
-                // 遍历所有像素
-                for (let i = 0; i < imageData.data.length; i += 4) {
-                    const r = imageData.data[i];
-                    const g = imageData.data[i + 1];
-                    const b = imageData.data[i + 2];
-                    const a = imageData.data[i + 3];
-                    
-                    // 检查像素颜色是否与任何选中颜色匹配（考虑容差）
-                    let colorMatch = false;
-                    
-                    for (const selectedColor of transparentSelectedColors) {
-                        if (isTransparentColorMatch(r, g, b, selectedColor.r, selectedColor.g, selectedColor.b, transparentCurrentTolerance)) {
-                            colorMatch = true;
-                            break;
-                        }
-                    }
-                    
-                    if (colorMatch) {
-                        // 保留匹配的颜色
-                        newImageData.data[i] = r;
-                        newImageData.data[i + 1] = g;
-                        newImageData.data[i + 2] = b;
-                        newImageData.data[i + 3] = a;
-                    } else {
-                        // 将不匹配的颜色设为透明
-                        newImageData.data[i] = 0;
-                        newImageData.data[i + 1] = 0;
-                        newImageData.data[i + 2] = 0;
-                        newImageData.data[i + 3] = 0;
-                    }
-                }
-                
-                // 绘制处理后的图片到canvas
-                transparentCtx.putImageData(newImageData, 0, 0);
-                
-                // 保存处理后的图片数据
-                transparentProcessedImage = newImageData;
-                
-                // 启用下载按钮
-                downloadTransparentBtn.disabled = false;
-                
-            } catch (error) {
-                console.error('透明图片处理错误:', error);
-                showTransparentStatus('透明图片处理失败: ' + error.message, 'error');
-            }
-        }
-        
-        // 检查透明处理颜色是否匹配（考虑容差）
-        function isTransparentColorMatch(r1, g1, b1, r2, g2, b2, tolerance) {
-            return Math.abs(r1 - r2) <= tolerance && 
-                   Math.abs(g1 - g2) <= tolerance && 
-                   Math.abs(b1 - b2) <= tolerance;
-        }
-        
-        // 更新透明处理容差值
-        function updateTransparentTolerance() {
-            transparentCurrentTolerance = parseInt(toleranceTransparentInput.value);
-            toleranceTransparentValue.textContent = transparentCurrentTolerance;
-            
-            // 如果已经有选中的颜色，重新处理图片
-            if (transparentSelectedColors.length > 0) {
-                processTransparentImageWithSelectedColors();
-                saveTransparentStateToHistory();
-            }
-        }
-        
-        // 保存透明处理状态到历史记录
-        function saveTransparentStateToHistory() {
-            // 只保存最近10个状态
-            if (transparentColorHistory.length >= 10) {
-                transparentColorHistory.shift();
-            }
-            
-            // 保存当前状态
-            transparentColorHistory.push({
-                selectedColors: [...transparentSelectedColors],
-                imageData: transparentCtx.getImageData(0, 0, transparentCanvas.width, transparentCanvas.height)
-            });
-            
-            // 更新撤销按钮状态
-            undoTransparentBtn.disabled = transparentColorHistory.length <= 1;
-        }
-        
-        // 撤销透明处理上一步操作
-        function undoTransparentLastAction() {
-            if (transparentColorHistory.length <= 1) return;
-            
-            // 移除当前状态
-            transparentColorHistory.pop();
-            
-            // 恢复到上一个状态
-            const previousState = transparentColorHistory[transparentColorHistory.length - 1];
-            transparentSelectedColors = [...previousState.selectedColors];
-            
-            // 恢复图片
-            transparentCtx.putImageData(previousState.imageData, 0, 0);
-            
-            // 更新UI
-            updateTransparentColorPreview();
-            
-            // 更新撤销按钮状态
-            undoTransparentBtn.disabled = transparentColorHistory.length <= 1;
-            
-            // 更新下载按钮状态
-            downloadTransparentBtn.disabled = transparentSelectedColors.length === 0;
-            
-            showTransparentStatus('已撤销上一步操作', 'success');
-        }
-        
-        // 清除所有透明处理颜色
-        function clearAllTransparentColors() {
-            transparentSelectedColors = [];
-            updateTransparentColorPreview();
-            processTransparentImageWithSelectedColors();
-            saveTransparentStateToHistory();
-            showTransparentStatus('所有颜色已清除', 'success');
-        }
-        
-        // 重置透明处理图片到原始状态
-        function resetTransparentImage() {
-            if (transparentOriginalImage) {
-                transparentCtx.putImageData(transparentOriginalImage, 0, 0);
-                transparentSelectedColors = [];
-                transparentColorHistory = [];
-                updateTransparentColorPreview();
-                downloadTransparentBtn.disabled = true;
-                undoTransparentBtn.disabled = true;
-                saveTransparentStateToHistory();
-                showTransparentStatus('图片已重置', 'success');
-            }
-        }
-        
-        // 下载透明处理后的图片
-        function downloadTransparentImage() {
-            if (!transparentProcessedImage) return;
-            
-            // 创建一个临时canvas用于下载
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = transparentProcessedImage.width;
-            tempCanvas.height = transparentProcessedImage.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.putImageData(transparentProcessedImage, 0, 0);
-            
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.download = 'transparent-image.png';
-            link.href = tempCanvas.toDataURL('image/png');
-            link.click();
-            
-            showTransparentStatus('透明图片下载已开始', 'success');
-        }
-        
-        // 复制所有非透明颜色数据
-        function copyAllNonTransparentColors() {
-            if (!transparentOriginalImage) {
-                showTransparentStatus('请先加载图片', 'error');
-                return;
-            }
-            
-            try {
-                // 获取当前画布的像素数据
-                const imageData = transparentCtx.getImageData(0, 0, transparentCanvas.width, transparentCanvas.height);
-                const width = imageData.width;
-                const height = imageData.height;
-                
-                // 收集所有非透明像素
-                const nonTransparentPixels = [];
-                
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        const index = (y * width + x) * 4;
-                        const r = imageData.data[index];
-                        const g = imageData.data[index + 1];
-                        const b = imageData.data[index + 2];
-                        const a = imageData.data[index + 3];
-                        
-                        // 如果像素不透明，则添加到结果中
-                        if (a > 0) {
-                            const hexColor = rgbToHex(r, g, b);
-                            nonTransparentPixels.push({
-                                颜色: hexColor,
-                                x: x,
-                                y: y
-                            });
-                        }
-                    }
-                }
-                
-                if (nonTransparentPixels.length === 0) {
-                    showTransparentStatus('没有找到非透明像素', 'error');
-                    return;
-                }
-                
-                // 转换为指定格式的字符串
-                const colorData = nonTransparentPixels.map(pixel => 
-                    `{ 颜色: "${pixel.颜色}", x: ${pixel.x}, y: ${pixel.y} }`
-                );
-                
-                const arrayString = `[${colorData.join(', ')}]`;
-                
-                // 复制到剪贴板
-                navigator.clipboard.writeText(arrayString).then(() => {
-                    showTransparentStatus(`已复制 ${nonTransparentPixels.length} 个非透明像素数据到剪贴板`, 'success');
-                }).catch(err => {
-                    console.error('复制失败:', err);
-                    showTransparentStatus('复制失败，请手动复制数据', 'error');
-                    
-                    // 如果剪贴板API不可用，显示数据供用户手动复制
-                    const textArea = document.createElement('textarea');
-                    textArea.value = arrayString;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    showTransparentStatus('已尝试手动复制数据到剪贴板', 'success');
-                });
-                
-            } catch (error) {
-                console.error('获取非透明像素错误:', error);
-                showTransparentStatus('获取非透明像素失败: ' + error.message, 'error');
-            }
-        }
-        
-        // 处理透明处理键盘事件
-        function handleTransparentKeyDown(event) {
-            // 只在透明处理工具显示时处理键盘事件
-            if (document.getElementById('transparentTool').style.display !== 'block') return;
-            
-            // Ctrl+Z 撤销
-            if (event.ctrlKey && event.key === 'z') {
-                event.preventDefault();
-                undoTransparentLastAction();
-            }
-        }
-        
-        // 返回颜色拾取工具
-        function backToColorPicker() {
-            document.getElementById('colorPickerTool').style.display = 'block';
-            document.getElementById('transparentTool').style.display = 'none';
-            
-            // 重新聚焦到颜色拾取canvas
-            colorCanvas.focus();
-        }
-        
-        // 显示透明处理状态信息
-        function showTransparentStatus(message, type) {
-            transparentStatusDiv.textContent = message;
-            transparentStatusDiv.className = 'status';
-            
-            if (type === 'success') {
-                transparentStatusDiv.classList.add('success');
-            } else if (type === 'error') {
-                transparentStatusDiv.classList.add('error');
-            }
-            
-            // 3秒后清除状态信息
-            setTimeout(() => {
-                transparentStatusDiv.textContent = '';
-                transparentStatusDiv.className = 'status';
-            }, 3000);
-        }
-
         // 初始化
         updateColorList();
         colorCanvas.focus();
     </script>
 </body>
-
 </html>
+

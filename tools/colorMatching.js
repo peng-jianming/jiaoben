@@ -38,11 +38,17 @@ function 获取指定像素点的颜色(mat, x, y) {
  * @returns {boolean} 是否匹配
  */
 function 颜色匹配(color1, color2, tolerance) {
-    if (tolerance > 1) tolerance = 1;
+    if (tolerance >= 1) {
+        // 当tolerance=1时，允许完全匹配
+        return color1.r === color2.r && 
+               color1.g === color2.g && 
+               color1.b === color2.b;
+    }
+    
     const num = 255 - (tolerance * 255);
     return Math.abs(color1.r - color2.r) <= num &&
-        Math.abs(color1.g - color2.g) <= num &&
-        Math.abs(color1.b - color2.b) <= num;
+           Math.abs(color1.g - color2.g) <= num &&
+           Math.abs(color1.b - color2.b) <= num;
 }
 
 
@@ -98,6 +104,8 @@ async function 多点关联颜色匹配(colorPoints, imagePath, tolerance = 0.9,
                 const baseColor = 获取指定像素点的颜色(bgrMat, x, y);
 
                 if (颜色匹配(baseColor, offsets[0].color, tolerance)) {
+                    console.log(x,y, "===========");
+                    
                     // 检查其他点是否匹配
                     let allMatch = true;
 
@@ -146,7 +154,7 @@ async function 多点关联颜色匹配(colorPoints, imagePath, tolerance = 0.9,
         return null;
     }
 }
-
+// 17.12
 
 /**
  * 多点颜色匹配 - 直接检查指定坐标点的颜色
@@ -236,44 +244,23 @@ async function 多点颜色匹配(colorPoints, imagePath, tolerance = 0.9, searc
     }
 }
 
-// async function main() {
-//     const colorPoints = [
-//         { 颜色: "#cb5ae2", x: 1995, y: 303 },
-//         { 颜色: "#cf62eb", x: 1993, y: 301 },
-//         { 颜色: "#db66f2", x: 1991, y: 298 },
-//         { 颜色: "#da61f7", x: 1984, y: 297 },
-//         { 颜色: "#e366f2", x: 1987, y: 292 },
-//         { 颜色: "#c56fda", x: 1982, y: 289 },
-//         { 颜色: "#bf6ad9", x: 1993, y: 289 },
-//         { 颜色: "#d86bf4", x: 1987, y: 289 },
-//         { 颜色: "#c06bda", x: 1987, y: 286 },
-//         { 颜色: "#ca63df", x: 1982, y: 279 },
-//         { 颜色: "#db66f4", x: 1991, y: 278 },
-//         { 颜色: "#df65fe", x: 1972, y: 298 },
-//         { 颜色: "#d85af8", x: 1968, y: 294 },
-//         { 颜色: "#d165ee", x: 1968, y: 288 },
-//         { 颜色: "#da64f9", x: 1969, y: 282 },
-//         { 颜色: "#d06af3", x: 1970, y: 277 }
-//     ];
-//     const result = await 多点颜色匹配(
-//         colorPoints,
-//         path.resolve(__dirname, '../resource', `bbb.bmp`),
-//         0.8
-//     );
-//     console.log(result);
-
-//     // if (result) {
-//     //     console.log(`找到匹配点: (${result.x}, ${result.y})`);
-//     // } else {
-//     //     console.log('未找到匹配点');
-//     // }
-// }
-// setTimeout(() => {
-//     main();
-// }, 1000)
+async function main() {
+    const colorPoints = [{ 颜色: "#cc5ee1", x: 7, y: 2 }, { 颜色: "#d661e9", x: 12, y: 2 }, { 颜色: "#ce67e6", x: 13, y: 2 }, { 颜色: "#d366e5", x: 14, y: 2 }, { 颜色: "#cc61df", x: 16, y: 2 }, { 颜色: "#c55fd8", x: 17, y: 2 }, { 颜色: "#cd62de", x: 18, y: 2 }, { 颜色: "#c760d8", x: 25, y: 2 }, { 颜色: "#d15eeb", x: 33, y: 2 }, { 颜色: "#d05ee8", x: 34, y: 2 }, { 颜色: "#cd5be2", x: 35, y: 2 }, { 颜色: "#d05ee6", x: 36, y: 2 }, { 颜色: "#cc59e9", x: 38, y: 2 }, { 颜色: "#ca57e6", x: 39, y: 2 }, { 颜色: "#cc59e9", x: 40, y: 2 }, { 颜色: "#c959e4", x: 48, y: 2 }, { 颜色: "#d264e9", x: 73, y: 2 }, { 颜色: "#c664e8", x: 27, y: 3 }, { 颜色: "#cc55dc", x: 48, y: 5 }, { 颜色: "#cd63da", x: 5, y: 6 }, { 颜色: "#d062e8", x: 32, y: 6 }, { 颜色: "#ce5fea", x: 33, y: 6 }, { 颜色: "#cb5ce8", x: 34, y: 6 }, { 颜色: "#ca5ae8", x: 35, y: 6 }, { 颜色: "#cc5cea", x: 36, y: 6 }, { 颜色: "#c559e9", x: 83, y: 6 }, { 颜色: "#c254e6", x: 84, y: 6 }, { 颜色: "#d263e7", x: 20, y: 7 }, { 颜色: "#cf64e8", x: 20, y: 8 }, { 颜色: "#cf64e9", x: 20, y: 9 }, { 颜色: "#c659ea", x: 73, y: 9 }, { 颜色: "#c860dc", x: 5, y: 10 }, { 颜色: "#c562e9", x: 7, y: 10 }, { 颜色: "#cc61e6", x: 20, y: 10 }, { 颜色: "#c461ea", x: 41, y: 10 }, { 颜色: "#ca65ea", x: 7, y: 11 }, { 颜色: "#cc5de7", x: 20, y: 11 }, { 颜色: "#cf67e8", x: 33, y: 11 }, { 颜色: "#c557e8", x: 48, y: 11 }, { 颜色: "#cd62e6", x: 7, y: 12 }, { 颜色: "#ca5ae6", x: 20, y: 12 }, { 颜色: "#c260e5", x: 75, y: 12 }, { 颜色: "#cc60e9", x: 76, y: 12 }, { 颜色: "#ca5be7", x: 20, y: 13 }, { 颜色: "#cb62e9", x: 74, y: 13 }, { 颜色: "#ca59e3", x: 84, y: 14 }, { 颜色: "#ca57e9", x: 20, y: 15 }, { 颜色: "#c966eb", x: 50, y: 15 }, { 颜色: "#c563eb", x: 71, y: 15 }, { 颜色: "#cb5de6", x: 41, y: 16 }, { 颜色: "#cf57e7", x: 81, y: 17 }, { 颜色: "#cf63eb", x: 3, y: 18 }, { 颜色: "#c759e8", x: 5, y: 18 }, { 颜色: "#d059e7", x: 7, y: 18 }, { 颜色: "#c558e3", x: 8, y: 18 }, { 颜色: "#c757dd", x: 25, y: 18 }, { 颜色: "#d25eea", x: 64, y: 18 }, { 颜色: "#d160e6", x: 77, y: 18 }, { 颜色: "#cd62eb", x: 16, y: 19 }, { 颜色: "#d163ea", x: 17, y: 19 }, { 颜色: "#d467e8", x: 18, y: 19 }, { 颜色: "#c665e8", x: 52, y: 19 }, { 颜色: "#c268e2", x: 70, y: 19 }, { 颜色: "#cd63eb", x: 73, y: 19 }, { 颜色: "#ca61e3", x: 74, y: 19 }]
+    const result = await 多点关联颜色匹配(
+        colorPoints,
+        path.resolve(__dirname, '../resource', `3333.bmp`),
+        1
+    );
+    console.log(result);
+}
+setTimeout(() => {
+    main();
+}, 1000)
 
 
 module.exports = {
     多点关联颜色匹配,
     多点颜色匹配
 }
+
+

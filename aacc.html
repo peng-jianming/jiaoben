@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片颜色选择与透明化工具</title>
     <style>
-        /* 样式保持不变 */
+        /* 原有样式保持不变 */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -294,6 +294,80 @@
             margin-top: 20px;
         }
         
+        /* 新增的放大镜样式 */
+        .magnifier-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .magnifier-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .magnifier-box {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .magnifier-canvas {
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 0, 0, 0.7);
+        }
+        
+        .crosshair::before {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            left: 0;
+        }
+        
+        .crosshair::after {
+            width: 1px;
+            height: 100%;
+            top: 0;
+            left: 50%;
+        }
+        
+        .magnifier-info {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        
         @media (max-width: 768px) {
             .main-content {
                 flex-direction: column;
@@ -371,6 +445,7 @@
                         <li>使用 <strong>Ctrl+Z</strong> 或撤销按钮可以撤销上一步操作</li>
                         <li>点击"下载结果"保存处理后的图片</li>
                         <li>点击"复制所有非透明颜色"获取当前图片上所有非透明颜色的数据</li>
+                        <li><strong>新增:</strong> 鼠标移动到图片上可查看放大镜效果</li>
                     </ul>
                 </div>
             </div>
@@ -380,6 +455,17 @@
                 <div class="canvas-container">
                     <canvas id="canvas"></canvas>
                 </div>
+                
+                <!-- 新增的放大镜区域 -->
+                <div class="magnifier-container">
+                    <div class="magnifier-title">放大镜 (20×20像素)</div>
+                    <div class="magnifier-box">
+                        <canvas id="magnifierCanvas" class="magnifier-canvas"></canvas>
+                        <div class="crosshair"></div>
+                    </div>
+                    <div class="magnifier-info">鼠标悬停在图片上查看放大效果</div>
+                </div>
+                
                 <div id="status" class="status"></div>
             </div>
         </div>
@@ -397,6 +483,7 @@
         let colorHistory = [];
         let currentTolerance = 10;
         let canvas, ctx;
+        let magnifierCanvas, magnifierCtx;
         let fileInput; // 添加文件输入变量
         let scaleX = 1, scaleY = 1; // 用于坐标缩放计算
         
@@ -413,11 +500,18 @@
         const selectedColorsContainer = document.getElementById('selectedColors');
         const statusDiv = document.getElementById('status');
         const canvasElement = document.getElementById('canvas');
+        const magnifierCanvasElement = document.getElementById('magnifierCanvas');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             canvas = canvasElement;
             ctx = canvas.getContext('2d');
+            
+            // 初始化放大镜canvas
+            magnifierCanvas = magnifierCanvasElement;
+            magnifierCtx = magnifierCanvas.getContext('2d');
+            magnifierCanvas.width = 200;
+            magnifierCanvas.height = 200;
             
             // 创建隐藏的文件输入元素
             createHiddenFileInput();
@@ -431,6 +525,8 @@
             clearColorsBtn.addEventListener('click', clearAllColors);
             toleranceInput.addEventListener('input', updateTolerance);
             canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseleave', handleCanvasMouseLeave);
             document.addEventListener('keydown', handleKeyDown);
             
             // 初始化颜色预览
@@ -501,6 +597,98 @@
                 width: srcWidth * ratio,
                 height: srcHeight * ratio
             };
+        }
+        
+        // 处理canvas鼠标移动事件
+        function handleCanvasMouseMove(event) {
+            if (!originalImage) return;
+            
+            // 获取鼠标位置的坐标（考虑缩放比例）
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) * scaleX);
+            const y = Math.floor((event.clientY - rect.top) * scaleY);
+            
+            // 确保坐标在画布范围内
+            if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+            
+            // 更新放大镜显示
+            updateMagnifier(x, y);
+        }
+        
+        // 处理canvas鼠标离开事件
+        function handleCanvasMouseLeave() {
+            // 清除放大镜内容
+            magnifierCtx.clearRect(0, 0, magnifierCanvas.width, magnifierCanvas.height);
+        }
+        
+        // 更新放大镜显示
+        function updateMagnifier(x, y) {
+            // 清除放大镜canvas
+            magnifierCtx.clearRect(0, 0, magnifierCanvas.width, magnifierCanvas.height);
+            
+            // 定义放大区域大小
+            const magnifierSize = 20; // 20x20像素区域
+            const magnifierScale = 10; // 放大倍数
+            
+            // 计算放大区域边界
+            const startX = Math.max(0, x - magnifierSize / 2);
+            const startY = Math.max(0, y - magnifierSize / 2);
+            const endX = Math.min(canvas.width, x + magnifierSize / 2);
+            const endY = Math.min(canvas.height, y + magnifierSize / 2);
+            
+            // 获取放大区域的图像数据
+            const imageData = ctx.getImageData(startX, startY, endX - startX, endY - startY);
+            
+            // 创建临时canvas来放大图像
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = endX - startX;
+            tempCanvas.height = endY - startY;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(imageData, 0, 0);
+            
+            // 绘制放大后的图像到放大镜canvas
+            magnifierCtx.imageSmoothingEnabled = false;
+            magnifierCtx.drawImage(
+                tempCanvas, 
+                0, 0, tempCanvas.width, tempCanvas.height,
+                0, 0, magnifierCanvas.width, magnifierCanvas.height
+            );
+            
+            // 绘制网格线
+            magnifierCtx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            magnifierCtx.lineWidth = 0.5;
+            
+            // 水平线
+            for (let i = 1; i < magnifierSize; i++) {
+                const yPos = (i * magnifierCanvas.height) / magnifierSize;
+                magnifierCtx.beginPath();
+                magnifierCtx.moveTo(0, yPos);
+                magnifierCtx.lineTo(magnifierCanvas.width, yPos);
+                magnifierCtx.stroke();
+            }
+            
+            // 垂直线
+            for (let i = 1; i < magnifierSize; i++) {
+                const xPos = (i * magnifierCanvas.width) / magnifierSize;
+                magnifierCtx.beginPath();
+                magnifierCtx.moveTo(xPos, 0);
+                magnifierCtx.lineTo(xPos, magnifierCanvas.height);
+                magnifierCtx.stroke();
+            }
+            
+            // 绘制中央像素的边框
+            const centerX = magnifierCanvas.width / 2;
+            const centerY = magnifierCanvas.height / 2;
+            const pixelSize = magnifierCanvas.width / magnifierSize;
+            
+            magnifierCtx.strokeStyle = 'red';
+            magnifierCtx.lineWidth = 2;
+            magnifierCtx.strokeRect(
+                centerX - pixelSize / 2, 
+                centerY - pixelSize / 2, 
+                pixelSize, 
+                pixelSize
+            );
         }
         
         // 处理canvas点击事件
