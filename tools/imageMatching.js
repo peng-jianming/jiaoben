@@ -1,169 +1,132 @@
 const Jimp = require('jimp');
 const cv = require('../opencv.js');
-
-const 获取图片四个角的颜色 = (image) => {
-    const width = image.bitmap.width;
-    const height = image.bitmap.height;
-
-    return [
-        { x: 0, y: 0 },                    // 左上角
-        { x: width - 1, y: 0 },           // 右上角
-        { x: 0, y: height - 1 },          // 左下角
-        { x: width - 1, y: height - 1 }   // 右下角
-    ].map(corner => {
-        const color = Jimp.intToRGBA(image.getPixelColor(corner.x, corner.y));
-        return {
-            x: corner.x,
-            y: corner.y,
-            r: color.r,
-            g: color.g,
-            b: color.b,
-            a: color.a
-        };
-    });
-}
-
-const 检查四个角颜色是否相同 = (corners) => {
-    if (corners.length < 4) return false;
-
-    const firstCorner = corners[0];
-    for (let i = 1; i < corners.length; i++) {
-        const corner = corners[i];
-        if (corner.r !== firstCorner.r ||
-            corner.g !== firstCorner.g ||
-            corner.b !== firstCorner.b ||
-            corner.a !== firstCorner.a) {
-            return false;
-        }
-    }
-    return true;
-}
+const path = require('path')
 
 
-const 创建透明色掩码 = (templMat, transparentColor) => {
-    const mask = new cv.Mat(templMat.rows, templMat.cols, cv.CV_8UC1);
-
-    // 将透明色区域设为0，其他区域设为255
-    for (let i = 0; i < templMat.rows; i++) {
-        for (let j = 0; j < templMat.cols; j++) {
-            const pixel = templMat.ptr(i, j);
-            if (pixel[0] === transparentColor.b && // OpenCV使用BGR格式
-                pixel[1] === transparentColor.g &&
-                pixel[2] === transparentColor.r &&
-                pixel[3] === transparentColor.a) {
-                mask.ucharPtr(i, j)[0] = 0; // 透明色区域不参与匹配
-            } else {
-                mask.ucharPtr(i, j)[0] = 255; // 非透明色区域参与匹配
-            }
-        }
-    }
-
-
-    return mask;
-}
-
-
-
-const 图片匹配 = async (aPath, bPaths, threshold = 0.8) => {
-    const templatePaths = Array.isArray(bPaths) ? bPaths : [bPaths];
-
+const 图片匹配 = async (bigPath, smallPath, threshold = 0.8) => {
     try {
-        const aImage = await Jimp.Jimp.read(aPath);
-        const srcMat = cv.matFromImageData(aImage.bitmap);
-        const srcGray = new cv.Mat();
-        cv.cvtColor(srcMat, srcGray, cv.COLOR_RGBA2GRAY);
+        // 1. 使用 Jimp 加载大图和小图
+        const bigImage = await Jimp.Jimp.read(bigPath);
+        const smallImage = await Jimp.Jimp.read(smallPath);
 
-        for (let i = 0; i < templatePaths.length; i++) {
-            const bPath = templatePaths[i];
-            let bImage = null;
-            let templMat = null;
-            let templGray = null;
-            let mask = null;
+        const bigWidth = bigImage.bitmap.width;
+        const bigHeight = bigImage.bitmap.height;
+        const smallWidth = smallImage.bitmap.width;
+        const smallHeight = smallImage.bitmap.height;
 
-            try {
-                bImage = await Jimp.Jimp.read(bPath);
-                templMat = cv.matFromImageData(bImage.bitmap);
-                templGray = new cv.Mat();
-                cv.cvtColor(templMat, templGray, cv.COLOR_RGBA2GRAY);
-
-                // 检查图像尺寸，避免模板图比原图大
-                if (templGray.rows > srcGray.rows || templGray.cols > srcGray.cols) {
-                    // console.warn(`模板图片 ${bPath} 尺寸大于原图，跳过匹配`);
-                    continue;
-                }
-
-                const corners = 获取图片四个角的颜色(bImage);
-                const hasTransparentColor = 检查四个角颜色是否相同(corners);
-
-                if (hasTransparentColor) {
-                    const transparentColor = corners[0];
-                    mask = await 创建透明色掩码(templMat, transparentColor, false);
-                }
-
-                const result = new cv.Mat();
-                const method = cv.TM_CCOEFF_NORMED;
-
-                if (mask) {
-                    cv.matchTemplate(srcGray, templGray, result, method, mask);
-                } else {
-                    cv.matchTemplate(srcGray, templGray, result, method);
-                }
-
-                const minMax = cv.minMaxLoc(result);
-                let maxValue = minMax.maxVal;
-
-                // 关键修复：检查并处理异常数值
-                if (!isFinite(maxValue)) {
-                    // console.warn(`检测到异常匹配值: ${maxValue}，将其设置为0`);
-                    maxValue = 0;
-                }
-
-                // 确保匹配值在合理范围内 [0, 1]
-                maxValue = Math.max(0, Math.min(1, maxValue));
-
-                result.delete();
-                if (mask) {
-                    mask.delete();
-                }
-
-                if (maxValue >= threshold) {
-                    srcMat.delete();
-                    srcGray.delete();
-
-                    return {
-                        found: true,
-                        confidence: maxValue,
-                        location: {
-                            x: maxLoc.x,
-                            y: maxLoc.y,
-                            width: bImage.bitmap.width,
-                            height: bImage.bitmap.height
-                        },
-                        index: i,
-                    };
-                }
-            } catch (error) {
-                console.error(`处理模板图片 ${bPath} 时出错:`, error);
-            } finally {
-                if (templMat) templMat.delete();
-                if (templGray) templGray.delete();
-            }
+        // 检查小图是否大于大图
+        if (smallWidth > bigWidth || smallHeight > bigHeight) {
+            console.log('小图尺寸超过大图，无法匹配');
+            return null;
         }
 
-        srcMat.delete();
-        srcGray.delete();
+        // 2. 将 Jimp 图片转换为 OpenCV Mat
+        const bigMat = new cv.Mat(bigHeight, bigWidth, cv.CV_8UC4);
+        bigMat.data.set(bigImage.bitmap.data);
 
-        return {
-            found: false,
-            confidence: 0,
-            location: null,
-            index: -1,
-        };
+        const smallMat = new cv.Mat(smallHeight, smallWidth, cv.CV_8UC4);
+        smallMat.data.set(smallImage.bitmap.data);
+
+        // 3. 将 RGBA 转换为 BGR（OpenCV 使用 BGR 顺序）
+        const bigBgr = new cv.Mat();
+        const smallBgr = new cv.Mat();
+        cv.cvtColor(bigMat, bigBgr, cv.COLOR_RGBA2BGR);
+        cv.cvtColor(smallMat, smallBgr, cv.COLOR_RGBA2BGR);
+
+        // 4. 转换为灰度图（忽略颜色，只关注形状和亮度）
+        const bigGray = new cv.Mat();
+        const smallGray = new cv.Mat();
+        cv.cvtColor(bigBgr, bigGray, cv.COLOR_BGR2GRAY);
+        cv.cvtColor(smallBgr, smallGray, cv.COLOR_BGR2GRAY);
+
+        // 5. 检查小图是否有透明像素，创建掩码
+        let smallMask;
+        const alphaChannel = smallMat.channels() === 4 ? 3 : -1; // RGBA 中 alpha 在第4个通道
+        if (alphaChannel >= 0) {
+            // 从 RGBA 图片中提取 alpha 通道作为掩码
+            const channels = new cv.MatVector();
+            cv.split(smallMat, channels);
+            const alpha = channels.get(3); // 获取 alpha 通道
+            smallMask = new cv.Mat();
+            cv.threshold(alpha, smallMask, 1, 255, cv.THRESH_BINARY); // 将 alpha > 0 的像素设为 255，其他为 0
+            alpha.delete();
+            channels.delete();
+        } else {
+            // 如果没有 alpha 通道，创建一个全白掩码（所有像素都参与匹配）
+            smallMask = cv.Mat.ones(smallMat.rows, smallMat.cols, cv.CV_8U).mul(255);
+        }
+
+        // 6. 使用灰度图进行模板匹配（使用掩码）
+        const result = new cv.Mat();
+        cv.matchTemplate(bigGray, smallGray, result, cv.TM_CCOEFF_NORMED, smallMask);
+
+        // 7. 找到最佳匹配点
+        const minMax = cv.minMaxLoc(result);
+        let maxValue = minMax.maxVal;
+        const maxLoc = minMax.maxLoc;
+
+        // 检查并处理异常数值
+        if (!isFinite(maxValue)) {
+            console.warn('检测到异常匹配值:', maxValue);
+            maxValue = 0;
+        }
+
+        // 确保匹配值在合理范围内 [0, 1]
+        maxValue = Math.max(0, Math.min(1, maxValue));
+
+        console.log('匹配相似度:', maxValue);
+
+        // 8. 检查是否达到阈值
+        if (maxValue >= threshold) {
+            const x = maxLoc.x;
+            const y = maxLoc.y;
+
+            // 清理内存
+            bigMat.delete();
+            smallMat.delete();
+            bigBgr.delete();
+            smallBgr.delete();
+            bigGray.delete();
+            smallGray.delete();
+            result.delete();
+            smallMask.delete();
+
+            // 返回匹配位置（返回小图左上角坐标）
+            return { x, y };
+        } else {
+            // 清理内存
+            bigMat.delete();
+            smallMat.delete();
+            bigBgr.delete();
+            smallBgr.delete();
+            bigGray.delete();
+            smallGray.delete();
+            result.delete();
+            smallMask.delete();
+
+            return null;
+        }
+
     } catch (error) {
-        console.error('图像处理出错:', error);
-        throw error;
+        console.error('图片匹配错误:', error);
+        return null;
     }
 }
+
+
+
+// async function main() {
+//     const result = await 图片匹配(
+//         path.resolve(__dirname, '../resource', `bbb.bmp`),
+//         path.resolve(__dirname, '../resource', `vvv.png`),
+//         0.7
+//     );
+//     console.log('匹配结果:', result);
+// }
+
+// setTimeout(() => {
+//     main();
+// }, 1000);
 
 module.exports = {
     图片匹配

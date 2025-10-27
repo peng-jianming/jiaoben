@@ -9,32 +9,27 @@ class Demo extends Mhxy {
         super(hwnd, changeProp)
     }
     async start() {
+        // this.滑动({ x: 327, y: 1366 }, { x: 1069, y: 1364 })
+        await this.滑动({ x: 527, y: 1000 }, { x: 527, y: 500 })
     }
 }
 
 setTimeout(() => {
-    // getList().then(item => {
-    //     const demo = new Demo(item[0].deviceId, () => { })
-    //     setInterval(() => {
-    //         demo.start()
-    //     }, 10000)
-    //     demo.start()
-    // });
-    const demo = new Demo('1111', () => { })
+    getList().then(item => {
+        const demo = new Demo(item[0].deviceId, () => { })
+        setInterval(() => {
+            demo.start()
+        }, 3000)
+        demo.start()
+    });
+    // const demo = new Demo('1111', () => { })
 
-    demo.start()
+    // demo.start()
 }, 1000);
 
 // module.exports = Demo
 
 
-
-
-// 延时
-// 滑动
-// 随机点击
-// 偶尔失误点击
-// 制作透明图，然后获取剩余的颜色和坐标
 
 
 

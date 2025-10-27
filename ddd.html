@@ -1149,11 +1149,11 @@
                 return;
             }
 
-            let textToCopy = '颜色记录:\n\n';
+            let textToCopy = '[';
             colorRecords.forEach((record, index) => {
-                textToCopy += `${index + 1}. RGB: ${record.r}, ${record.g}, ${record.b} | HEX: #${record.hex} | 坐标: (${record.x}, ${record.y})\n`;
+                textToCopy += `{ "颜色": "${record.hex}", "x": ${record.x}, "y": ${record.y} },`;
             });
-
+            textToCopy += ']';
             navigator.clipboard.writeText(textToCopy).then(() => {
                 alert('颜色记录已复制到剪贴板');
             }).catch(err => {

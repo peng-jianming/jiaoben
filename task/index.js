@@ -58,6 +58,7 @@ class Mhxy {
     async 左键点击(result) {
         if (result) {
             await 屏幕控制(this.hwnd, '0', String(result.x / this.width), String(result.y / this.height))
+            await this.延时(this.随机区间时间(200, 1000))
             await 屏幕控制(this.hwnd, '2', String(result.x / this.width), String(result.y / this.height))
         } else {
             console.log('左键点击坐标为空');
@@ -215,12 +216,12 @@ class Mhxy {
                 });
             }
 
-            const 原始轨迹 = 获取贝塞尔曲线(result1.x, result1.y, result2.x, result2.y);
+            const arr = 获取贝塞尔曲线(result1.x, result1.y, result2.x, result2.y);
 
-            const arr = 添加轨迹抖动(原始轨迹, 1.5); // 1.5像素的抖动强度
+            // const arr = 添加轨迹抖动(原始轨迹, 1.5); // 1.5像素的抖动强度
             try {
                 // 生成延时模式
-                const 延时模式 = 生成人类延时模式(arr.length - 1);
+                // const 延时模式 = 生成人类延时模式(arr.length - 1);
 
                 // 1. 按下起点
                 await 屏幕控制(this.hwnd, '0',
@@ -228,8 +229,9 @@ class Mhxy {
                     String(result1.y / this.height));
 
                 // 初始按下后的小延迟
-                await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 50));
-
+                await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 50));
+                    console.log(arr);
+                    
                 // 2. 按贝塞尔曲线路径移动，使用人类化延时
                 for (let i = 1; i < arr.length - 1; i++) {
                     const point = arr[i];
@@ -238,7 +240,7 @@ class Mhxy {
                         String(point[1] / this.height));
 
                     // 使用预生成的人类化延时
-                    await new Promise(resolve => setTimeout(resolve, 延时模式[i]));
+                    // await new Promise(resolve => setTimeout(resolve, 延时模式[i]));
                 }
 
                 // 3. 移动到终点
@@ -248,7 +250,7 @@ class Mhxy {
                     String(lastPoint[1] / this.height));
 
                 // 抬起前的微小停顿（人类会稍微停顿再松开）
-                await new Promise(resolve => setTimeout(resolve, 80 + Math.random() * 70));
+                await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 70));
 
                 // 4. 在终点抬起
                 await 屏幕控制(this.hwnd, '2',
@@ -277,28 +279,28 @@ class Mhxy {
     }
 
 
-    async 打开活动弹框() {
-        const res1 = await this.多点关联颜色匹配(配置.活动按钮);
-        if (res1) {
-            console.log('打开活动弹框')
-            await this.左键点击(res1);
-            await this.延时(2, 0)
-        }
+    // async 打开活动弹框() {
+    //     const res1 = await this.多点关联颜色匹配(配置.活动按钮);
+    //     if (res1) {
+    //         console.log('打开活动弹框')
+    //         await this.左键点击(res1);
+    //         await this.延时(2, 0)
+    //     }
 
-        const res2 = await this.多点颜色匹配(配置.活动界面);
-        if (res2) {
-            console.log('处于活动弹框')
-            const res3 = await this.多点颜色匹配(配置.日常活动激活状态);
-            if (res3) {
-                console.log('活动已归位')
-            } else {
-                console.log('归位活动')
-                await this.左键点击({ x: 574, y: 171 });
-            }
-        } else {
-            this.打开活动弹框();
-        }
-    }
+    //     const res2 = await this.多点颜色匹配(配置.活动界面);
+    //     if (res2) {
+    //         console.log('处于活动弹框')
+    //         const res3 = await this.多点颜色匹配(配置.日常活动激活状态);
+    //         if (res3) {
+    //             console.log('活动已归位')
+    //         } else {
+    //             console.log('归位活动')
+    //             await this.左键点击({ x: 574, y: 171 });
+    //         }
+    //     } else {
+    //         this.打开活动弹框();
+    //     }
+    // }
 
 }
 
