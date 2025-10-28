@@ -9,8 +9,10 @@ class Demo extends Mhxy {
         super(hwnd, changeProp)
     }
     async start() {
-        // this.滑动({ x: 327, y: 1366 }, { x: 1069, y: 1364 })
-        await this.滑动({ x: 527, y: 1000 }, { x: 527, y: 500 })
+        const result = await this.多点关联颜色匹配(配置.aaaa)
+        
+        await this.ADB左键点击(result)
+        // await this.ADB滑动({ x: 527, y: 1000 }, { x: 527, y: 500 })
     }
 }
 

@@ -91,12 +91,8 @@ async function 多点关联颜色匹配(colorPoints, imagePath, tolerance = 0.9,
             startY = Math.max(0, searchRegion.y);
             endX = Math.max(0, searchRegion.x2);
             endY = Math.max(0, searchRegion.y2);
-
-            // console.log(`搜索区域: (${startX}, ${startY}) 到 (${endX}, ${endY})`);
-        } else {
-            // console.log(`搜索整个图片: (0, 0) 到 (${endX}, ${endY})`);
         }
-``
+
         // 6. 遍历图片进行匹配
         for (let y = startY; y < endY; y++) {
             for (let x = startX; x < endX; x++) {
@@ -127,16 +123,11 @@ async function 多点关联颜色匹配(colorPoints, imagePath, tolerance = 0.9,
                     }
 
                     if (allMatch) {
-                        // 调试信息
-                        // const debugColor = 获取指定像素点的颜色(bgrMat, x, y);
-                        // console.log(`找到匹配点: (${x}, ${y})`);
-                        // console.log('实际颜色 (BGR):', debugColor);
-                        // console.log('目标颜色 (BGR):', offsets[0].color);
-
                         // 清理内存并返回结果
                         mat.delete();
                         bgrMat.delete();
-                        return { x, y };
+                        // return { x, y };
+                        return 颜色点范围随机点(colorPoints);
                     }
                 }
             }
@@ -243,6 +234,39 @@ async function 多点颜色匹配(colorPoints, imagePath, tolerance = 0.9, searc
     }
 }
 
+/**
+ * 从颜色点坐标的外接矩形中返回一个随机点
+ * @param {Array} colorPoints - 颜色点数组，格式: [{颜色: "#795c2b", x: 1229, y: 83}, ...]
+ * @returns {{x:number,y:number}|null} 随机点坐标；若入参无效返回null
+ */
+function 颜色点范围随机点(colorPoints) {
+    if (!Array.isArray(colorPoints) || colorPoints.length === 0) {
+        return null;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const p of colorPoints) {
+        if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+            if (p.x < minX) minX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y > maxY) maxY = p.y;
+        }
+    }
+
+    if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+        return null;
+    }
+
+    const randX = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+    const randY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+    return { x: randX, y: randY };
+}
+
 // async function main() {
 //     const colorPoints = [
 //         { "颜色": "#d45af0", "x": 1988, "y": 290 },
@@ -285,6 +309,7 @@ async function 多点颜色匹配(colorPoints, imagePath, tolerance = 0.9, searc
 
 module.exports = {
     多点关联颜色匹配,
-    多点颜色匹配
+    多点颜色匹配,
+    颜色点范围随机点
 }
 

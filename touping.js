@@ -29,7 +29,7 @@ function connectUpstream() {
 
 connectUpstream()
 
-const getList = async () => {
+const getList =  async () => {
     return new Promise(resolve => {
         const data = {
             "action": "list"
@@ -41,7 +41,7 @@ const getList = async () => {
     })
 }
 
-const getScreen = async (deviceIds) => {
+const getScreen =  async (deviceIds) => {
     return new Promise(resolve => {
         const data = {
             "action": "screen",
@@ -58,7 +58,7 @@ const getScreen = async (deviceIds) => {
         }
     })
 }
-const 屏幕控制 = async (deviceIds, mask, x, y) => {
+const 屏幕控制 =  async (deviceIds, mask, x, y) => {
     return new Promise(resolve => {
         const data = {
             "action": "PointerEvent",
@@ -78,10 +78,28 @@ const 屏幕控制 = async (deviceIds, mask, x, y) => {
     })
 }
 
+const 调用ADB =  async (deviceIds, command) => {
+    return new Promise(resolve => {
+        const data = {
+            "action": "adb",
+            "comm": {
+                "deviceIds": deviceIds,
+                "command": command
+            }
+        }
+
+        upstreamWS.send(JSON.stringify(data))
+        currentResolve = () => {
+            resolve()
+        }
+    })
+}
+
 
 module.exports = {
     getList,
     getScreen,
-    屏幕控制
+    屏幕控制,
+    调用ADB
 };
 
