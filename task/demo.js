@@ -10,7 +10,6 @@ class Demo extends Mhxy {
     }
     async start() {
         const result = await this.多点关联颜色匹配(配置.aaaa)
-        
         await this.ADB左键点击(result)
         // await this.ADB滑动({ x: 527, y: 1000 }, { x: 527, y: 500 })
     }
