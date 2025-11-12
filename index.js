@@ -16,13 +16,13 @@ server.get('/', (req, res) => {
         <!DOCTYPE html>
         <html lang="en">
           <head><title>Hello</title></head>
-          <link rel="stylesheet" href="/elementUI.css">
+          <link rel="stylesheet" href="./ui/elementUI.css">
           <body>
             <div id="app"></div>
           </body>
           <!-- 引入客户端脚本 -->
-          <script src="/vue.js"></script>
-          <script type="module" src="/elementUI.js"></script>
+          <script src="./ui/vue.js"></script>
+          <script type="module" src="./ui//elementUI.js"></script>
           <script type="module" src="./ui/index.js"></script>
         </html>
       `);
