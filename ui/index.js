@@ -27,20 +27,10 @@ new Vue({
                 this.list = result.data
             }
         };
-
-        setTimeout(() => {
-            this.socket.send(JSON.stringify({
-                type: 'start',
-                data: {
-                    list: this.list,
-                    taskConfig: ['demo']
-                }
-            }))
-        }, 5000);
     },
     template: `
     <div>
-        <demo :deviceList="list"/>
+        <demo :deviceList="list" :socket="socket"/>
     </div>
     `
 });

@@ -8,9 +8,10 @@ class Mhxy {
     height = 1080
     flag = true
     hwnd = 0
-    constructor(hwnd, changeProp) {
+    constructor(hwnd, changeProp, params = {}) {
         this.hwnd = hwnd
         this.changeProp = changeProp;
+        this.params = params; // 任务参数
     }
     stop() {
         this.flag = false;

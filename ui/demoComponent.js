@@ -5,38 +5,31 @@ export default {
             default() {
                 return []
             }
+        },
+        socket: {
+            type: WebSocket,
+            default: null
         }
     },
     methods: {
         async handleStart(list) {
-            const aaa = await fetch('/start', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(list)
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP错误! 状态: ${response.status}`);
+            this.socket.send(JSON.stringify({
+                type: 'start',
+                data: {
+                    list: list,
+                    taskConfig: ['demo']
                 }
-                return response.json();
-            })
-            console.log(aaa, "----------");
+            }))
+            console.log("发送开始指令");
         },
         async handleStop(list) {
-            const aaa = await fetch('/stop', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(list)
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP错误! 状态: ${response.status}`);
+            this.socket.send(JSON.stringify({
+                type: 'stop',
+                data: {
+                    list: list
                 }
-                return response.json();
-            })
-            console.log(aaa, "----------");
+            }))
+            console.log("发送停止指令");
         },
     },
     template: `

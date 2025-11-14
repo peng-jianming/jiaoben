@@ -69,18 +69,7 @@ class Shimen extends Mhxy {
 //这其中需要判断是否卡住, 如果卡住则直接返回主界面,重新开始
 
 
-setTimeout(() => {
-    const { getList } = require('../touping.js')
-    getList().then(item => {
-        const demo = new Demo(item[0].deviceId, () => { })
-        setInterval(() => {
-            demo.start()
-        }, 3000)
-        demo.start()
-    });
-}, 1000);
-
-// module.exports = Shimen
+module.exports = Shimen
 
 
 
