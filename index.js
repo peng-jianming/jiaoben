@@ -31,11 +31,12 @@ class WorkerManager extends EventEmitter {
         this.workers.set(hwnd, workerInfo);
 
         worker.on('message', (message) => {
-            if (message.type === 'status') {
-                workerInfo.status = message.status;
-            } else if (message.type === 'update') {
-                Object.assign(workerInfo, message.data);
-            }
+            // if (message.type === 'status') {
+            //     workerInfo.status = message.status;
+            // } else if (message.type === 'update') {
+            //     Object.assign(workerInfo, message.data);
+            // }
+            Object.assign(workerInfo, message.data);
             workerInfo.lastUpdate = Date.now();
             this.emit('update');
         });
@@ -193,6 +194,8 @@ wss.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
+      console.log(data, "=====");
+      
       messageHandler.handleClientMessage(data);
     } catch (error) {
       console.error('处理 WebSocket 消息失败:', error);

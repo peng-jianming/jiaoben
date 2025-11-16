@@ -16,8 +16,8 @@ export default {
             this.socket.send(JSON.stringify({
                 type: 'start',
                 data: {
-                    list: list,
-                    taskConfig: ['demo']
+                    deviceList: list,
+                    taskConfig: ['demo', 'shimen']
                 }
             }))
             console.log("发送开始指令");
@@ -26,7 +26,7 @@ export default {
             this.socket.send(JSON.stringify({
                 type: 'stop',
                 data: {
-                    list: list
+                    deviceList: list
                 }
             }))
             console.log("发送停止指令");

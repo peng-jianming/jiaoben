@@ -10,6 +10,8 @@ class Demo extends Mhxy {
         if (result) {
             await this.ADB左键点击(result)
         }
+        console.log('1111111');
+        
         // await this.ADB滑动({ x: 527, y: 1000 }, { x: 527, y: 500 })
     }
 }
