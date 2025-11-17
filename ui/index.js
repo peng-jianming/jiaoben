@@ -16,7 +16,6 @@ new Vue({
 
         this.socket.onopen = (event) => {
             console.log('WebSocket连接已建立');
-            this.socket.send(JSON.stringify({ type: 'init' }))
         };
 
         this.socket.onmessage = (event) => {

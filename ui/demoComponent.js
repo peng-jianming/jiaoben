@@ -15,19 +15,16 @@ export default {
         async handleStart(list) {
             this.socket.send(JSON.stringify({
                 type: 'start',
-                data: {
-                    deviceList: list,
-                    taskConfig: ['demo', 'shimen']
-                }
+                deviceList: list,
+                taskList: ['demo', 'shimen']
             }))
             console.log("发送开始指令");
         },
         async handleStop(list) {
             this.socket.send(JSON.stringify({
                 type: 'stop',
-                data: {
-                    deviceList: list
-                }
+                deviceList: list,
+                data: {}
             }))
             console.log("发送停止指令");
         },

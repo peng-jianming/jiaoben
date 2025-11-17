@@ -5,17 +5,6 @@ let currentHwnd = null
 let taskLoop = null // 任务循环定时器
 
 /**
- * 更新状态并发送到主进程
- */
-function updateStatus(status) {
-    process.send({
-        type: 'status',
-        status,
-        hwnd: currentHwnd
-    });
-}
-
-/**
  * 更新任意属性并发送到主进程
  */
 function updateData(data) {
@@ -38,7 +27,7 @@ function createStatusUpdater() {
 // 处理主进程消息
 process.on('message', async (message) => {
     console.log('收到来自主进程的信息:', message);
-    
+
     currentHwnd = message.hwnd;
 
     try {
@@ -49,6 +38,7 @@ process.on('message', async (message) => {
             case 'stop':
                 handleStop();
                 break;
+            // 和任务逻辑无关,由热重载控制
             case 'reload':
                 handleReload(message);
                 break;
@@ -57,7 +47,6 @@ process.on('message', async (message) => {
         }
     } catch (error) {
         console.error('处理消息时出错:', error);
-        updateStatus('error');
     }
 });
 
@@ -65,9 +54,7 @@ process.on('message', async (message) => {
  * 处理启动任务
  */
 async function handleStart(message) {
-    updateStatus('running');
-    
-    const { taskConfig: tasks, options = {} } = message;
+    const { taskList, options = {} } = message;
     const statusUpdater = createStatusUpdater();
 
     // 停止之前的任务循环
@@ -83,15 +70,11 @@ async function handleStart(message) {
             return;
         }
 
-        for (const taskConfig of tasks) {
+        for (const taskName of taskList) {
             // 再次检查是否被停止
             if (currentTask && currentTask.flag === false) {
                 break;
             }
-
-            // 支持字符串（任务名）或对象（任务名+参数）
-            const taskName = typeof taskConfig === 'string' ? taskConfig : taskConfig.name;
-            const taskParams = typeof taskConfig === 'object' ? taskConfig.params : {};
 
             if (!taskRegistry.hasTask(taskName)) {
                 console.error(`任务 ${taskName} 不存在`);
@@ -104,11 +87,11 @@ async function handleStart(message) {
                 if (currentTask && typeof currentTask.stop === 'function') {
                     currentTask.stop();
                 }
-                currentTask = new TaskClass(message.hwnd, statusUpdater, taskParams);
+                currentTask = new TaskClass(message.hwnd, statusUpdater);
                 await currentTask.start();
             } catch (error) {
                 console.error(`任务 ${taskName} 执行失败:`, error);
-                updateStatus('error');
+                updateData({ 'status': `任务 ${taskName} 执行失败` });
                 throw error;
             }
         }
@@ -118,13 +101,13 @@ async function handleStart(message) {
     if (options.loop && options.interval) {
         // 立即执行一次
         await executeTasks();
-        
+
         // 设置循环
         taskLoop = setInterval(async () => {
             if (currentTask && currentTask.flag === false) {
                 clearInterval(taskLoop);
                 taskLoop = null;
-                updateStatus('stopped');
+                updateData({ 'status': '空闲中' });
                 return;
             }
             try {
@@ -132,13 +115,13 @@ async function handleStart(message) {
             } catch (error) {
                 clearInterval(taskLoop);
                 taskLoop = null;
-                updateStatus('error');
+                updateData({ 'status': `循环任务错误` });
             }
         }, options.interval);
     } else {
         // 单次执行
         await executeTasks();
-        updateStatus('idle');
+        updateData({ 'status': '空闲中' });
     }
 }
 
@@ -163,8 +146,7 @@ function handleStop() {
         }
         currentTask = null;
     }
-    
-    updateStatus('stopped');
+    updateData({ 'status': '空闲中' });
 }
 
 /**
@@ -172,7 +154,7 @@ function handleStop() {
  */
 function handleReload(message) {
     const { taskName } = message;
-    
+
     if (taskName && taskName !== 'all') {
         // 重新加载指定任务
         const success = taskRegistry.reloadTask(taskName);
@@ -184,11 +166,4 @@ function handleReload(message) {
         const count = taskRegistry.reloadAllTasks();
         console.log(`[Worker ${currentHwnd}] 已重新加载 ${count} 个任务`);
     }
-    
-    // 通知主进程重载完成
-    process.send({
-        type: 'reloadComplete',
-        taskName: taskName || 'all',
-        hwnd: currentHwnd
-    });
 }

@@ -20,13 +20,14 @@ class WorkerManager extends EventEmitter {
             process: worker,
             hwnd,
             name,
-            status: 'idle',
+            status: '空闲中',
             lastUpdate: Date.now()
         };
 
         this.workers.set(hwnd, workerInfo);
 
         worker.on('message', (message) => {
+            console.log('收到来自子进程的信息:', message);
             Object.assign(workerInfo, message.data);
             workerInfo.lastUpdate = Date.now();
             this.emit('update');
@@ -65,7 +66,7 @@ class WorkerManager extends EventEmitter {
         return Array.from(this.workers.values()).map(info => ({
             hwnd: info.hwnd,
             name: info.name,
-            status: info.status || 'idle'
+            status: info.status || '空闲中'
         }));
     }
 

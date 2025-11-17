@@ -113,12 +113,16 @@ app.get('/', (req, res) => {
 wss.on('connection', (ws) => {
   console.log('新的 WebSocket 连接');
 
+  // 初始化或者获取设备列表给客户端
+  messageHandler.handleInit();
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
       console.log("收到来自客户端的信息:", data, );
       
       messageHandler.handleClientMessage(data);
+      
     } catch (error) {
       console.error('处理 WebSocket 消息失败:', error);
       ws.send(JSON.stringify({

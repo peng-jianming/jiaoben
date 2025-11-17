@@ -14,23 +14,17 @@ class MessageHandler {
     }
 
     handleClientMessage(message) {
-        switch (message.type) {
-            case 'init':
-                this.handleInit();
-                break;
-            case 'start':
-                this.handleStart(message);
-                break;
-            case 'stop':
-                this.handleStop(message);
-                break;
+        const { deviceList } = message;
+        if (deviceList) {
+            const hwnds = deviceList.map(device => device.hwnd);
+            this.workerManager.sendToWorkers(hwnds, message);
         }
     }
 
     async handleInit() {
         try {
             const deviceListRaw = await getList();
-            
+
             const deviceList = deviceListRaw.map(item => ({
                 hwnd: item.deviceId,
                 name: item.name
@@ -43,28 +37,6 @@ class MessageHandler {
         } catch (error) {
             console.error('初始化设备列表失败:', error);
         }
-    }
-
-    handleStart(message) {
-        const { deviceList, taskConfig, options } = message.data;
-        if (!deviceList || !taskConfig) return;
-
-        const hwnds = deviceList.map(device => device.hwnd);
-        this.workerManager.sendToWorkers(hwnds, {
-            type: 'start',
-            taskConfig,
-            options
-        });
-    }
-
-    handleStop(message) {
-        const { deviceList } = message.data;
-        if (!deviceList) return;
-
-        const hwnds = deviceList.map(device => device.hwnd);
-        this.workerManager.sendToWorkers(hwnds, {
-            type: 'stop'
-        });
     }
 
     broadcast() {

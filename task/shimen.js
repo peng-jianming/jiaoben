@@ -11,6 +11,7 @@ class Shimen extends Mhxy {
     async start() {
         console.log('222222277');
         this.changeProp('status', "22222212")
+        await this.延时(2000)
         // new StateMachine(() => {
 
         // })
