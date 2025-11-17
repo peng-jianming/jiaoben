@@ -34,7 +34,7 @@ export default {
     },
     template: `
     <div>
-        <el-button @click="handleStart(deviceList)">全部开始 </el-button>
+        <el-button @click="handleStart(deviceList)">全部开始1 </el-button>
         <el-button @click="handleStop(deviceList)">全部停止 </el-button>  
         <el-table :data="deviceList" border >
             <el-table-column prop="hwnd" label="句柄" width="180">

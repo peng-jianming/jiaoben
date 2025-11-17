@@ -1,175 +1,97 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const WebSocket = require('ws');
-const { fork } = require('child_process');
 const path = require('path');
-const EventEmitter = require('events');
-const { getList } = require('./touping');
+const hotReload = require('./hotReload');
 
-const server = express();
+// 引入核心框架模块
+const WorkerManager = require('./core/WorkerManager');
+const MessageHandler = require('./core/MessageHandler');
+
+const app = express();
+const httpServer = require('http').createServer(app);
 const wss = new WebSocket.Server({ port: 8081 });
-
-// ==================== 子进程管理器 ====================
-class WorkerManager extends EventEmitter {
-    constructor() {
-        super();
-        this.workers = new Map(); // { hwnd: { process, hwnd, name, status, ... } }
-    }
-
-    initWorker(hwnd, name) {
-        if (this.workers.has(hwnd)) return this.workers.get(hwnd);
-
-        const worker = fork(path.join(__dirname, 'worker.js'));
-        const workerInfo = {
-            process: worker,
-            hwnd,
-            name,
-            status: 'idle',
-            lastUpdate: Date.now()
-        };
-
-        this.workers.set(hwnd, workerInfo);
-
-        worker.on('message', (message) => {
-            // if (message.type === 'status') {
-            //     workerInfo.status = message.status;
-            // } else if (message.type === 'update') {
-            //     Object.assign(workerInfo, message.data);
-            // }
-            Object.assign(workerInfo, message.data);
-            workerInfo.lastUpdate = Date.now();
-            this.emit('update');
-        });
-
-        worker.on('exit', () => {
-            this.workers.delete(hwnd);
-            this.emit('update');
-        });
-
-        worker.on('error', () => {
-            this.workers.delete(hwnd);
-            this.emit('update');
-        });
-
-        return workerInfo;
-    }
-
-    sendToWorker(hwnd, message) {
-        const workerInfo = this.workers.get(hwnd);
-        if (!workerInfo) throw new Error(`Worker ${hwnd} not found`);
-        workerInfo.process.send({ ...message, hwnd });
-    }
-
-    sendToWorkers(hwnds, message) {
-        hwnds.forEach(hwnd => {
-            try {
-                this.sendToWorker(hwnd, message);
-            } catch (err) {
-                console.error(`Failed to send message to ${hwnd}:`, err);
-            }
-        });
-    }
-
-    getStatusList() {
-        return Array.from(this.workers.values()).map(info => ({
-            hwnd: info.hwnd,
-            name: info.name,
-            status: info.status || 'idle'
-        }));
-    }
-
-    cleanup() {
-        this.workers.forEach((info, hwnd) => {
-            if (info.process) info.process.kill();
-            this.workers.delete(hwnd);
-        });
-    }
-}
-
-// ==================== 消息处理器 ====================
-class MessageHandler {
-    constructor(workerManager) {
-        this.workerManager = workerManager;
-        this.workerManager.on('update', () => {
-            this.broadcast();
-        });
-    }
-
-    handleClientMessage(message) {
-        switch (message.type) {
-            case 'init':
-                this.handleInit();
-                break;
-            case 'start':
-                this.handleStart(message);
-                break;
-            case 'stop':
-                this.handleStop(message);
-                break;
-        }
-    }
-
-    async handleInit() {
-        try {
-            const deviceListRaw = await getList();
-            
-            const deviceList = deviceListRaw.map(item => ({
-                hwnd: item.deviceId,
-                name: item.name
-            }));
-
-            deviceList.forEach(device => {
-                this.workerManager.initWorker(device.hwnd, device.name);
-            });
-            this.broadcast();
-        } catch (error) {
-            console.error('初始化设备列表失败:', error);
-        }
-    }
-
-    handleStart(message) {
-        const { deviceList, taskConfig } = message.data;
-        if (!deviceList || !taskConfig) return;
-
-        const hwnds = deviceList.map(device => device.hwnd);
-        this.workerManager.sendToWorkers(hwnds, {
-            type: 'start',
-            taskConfig
-        });
-    }
-
-    handleStop(message) {
-        const { deviceList } = message.data;
-        if (!deviceList) return;
-
-        const hwnds = deviceList.map(device => device.hwnd);
-        this.workerManager.sendToWorkers(hwnds, {
-            type: 'stop'
-        });
-    }
-
-    broadcast() {
-        const message = JSON.stringify({
-            type: 'update',
-            data: this.workerManager.getStatusList()
-        });
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(message);
-            }
-        });
-    }
-}
 
 // 初始化管理器
 const workerManager = new WorkerManager();
-const messageHandler = new MessageHandler(workerManager);
+const messageHandler = new MessageHandler(workerManager, wss);
 
-server.use(bodyParser.json());
-server.use(express.static('.')); // 提供静态文件服务
+// ==================== 热重载功能 ====================
+// 监听根目录（用于 worker.js 和 index.js）
+hotReload.watchDirectory(__dirname);
+// 监听任务文件变化
+hotReload.watchDirectory(path.join(__dirname, 'task'));
+// 监听工具文件变化
+hotReload.watchDirectory(path.join(__dirname, 'tools'));
+// 监听 UI 文件变化
+hotReload.watchDirectory(path.join(__dirname, 'ui'));
+
+// 处理任务文件变化
+hotReload.on('taskChanged', ({ taskName, filePath }) => {
+    console.log(`\n🔄 任务文件已修改: ${taskName}`);
+    console.log(`   文件路径: ${filePath}`);
+    
+    // 通知所有子进程重新加载该任务
+    workerManager.workers.forEach((workerInfo, hwnd) => {
+        try {
+            workerManager.sendToWorker(hwnd, {
+                type: 'reload',
+                taskName
+            });
+        } catch (error) {
+            console.error(`通知 Worker ${hwnd} 重载失败:`, error.message);
+        }
+    });
+});
+
+// 处理工具文件变化
+hotReload.on('toolChanged', ({ filePath, filename }) => {
+    console.log(`\n🔄 工具文件已修改: ${filename}`);
+    console.log(`   文件路径: ${filePath}`);
+    
+    // 清除工具文件的 require 缓存（使用标准化路径）
+    const normalizedPath = path.resolve(filePath);
+    if (require.cache[normalizedPath]) {
+        delete require.cache[normalizedPath];
+        console.log(`✓ 已清除工具文件缓存: ${filename}`);
+    }
+    
+    // 通知所有子进程重新加载所有任务（因为工具文件可能被多个任务使用）
+    workerManager.workers.forEach((workerInfo, hwnd) => {
+        try {
+            workerManager.sendToWorker(hwnd, {
+                type: 'reload',
+                taskName: 'all' // 'all' 表示重新加载所有任务
+            });
+        } catch (error) {
+            console.error(`通知 Worker ${hwnd} 重载失败:`, error.message);
+        }
+    });
+});
+
+// 处理 worker.js 变化（需要重启子进程）
+hotReload.on('workerChanged', ({ filePath }) => {
+    console.log(`\n⚠ worker.js 已修改，重启所有子进程，需要手动刷新页面`);
+    console.log(`   文件路径: ${filePath}`);
+    
+    // 停止所有子进程
+    workerManager.cleanup();
+    
+    // 重新初始化所有设备
+    messageHandler.handleInit();
+});
+
+// 处理 UI 文件变化
+hotReload.on('uiChanged', ({ filePath, filename }) => {
+    console.log(`\n🔄 UI 文件已修改: ${filename}`);
+    console.log(`   文件路径: ${filePath}`);
+});
+
+app.use(bodyParser.json());
+app.use(express.static('.')); // 提供静态文件服务
 
 // 获取UI页面
-server.get('/', (req, res) => {
+app.get('/', (req, res) => {
   res.end(`
         <!DOCTYPE html>
         <html lang="en">
@@ -194,7 +116,7 @@ wss.on('connection', (ws) => {
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
-      console.log(data, "=====");
+      console.log("收到来自客户端的信息:", data, );
       
       messageHandler.handleClientMessage(data);
     } catch (error) {
@@ -216,15 +138,53 @@ wss.on('connection', (ws) => {
 });
 
 // 优雅关闭
-process.on('SIGINT', () => {
+let isShuttingDown = false;
+
+function gracefulShutdown() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
   console.log('\n正在关闭服务器...');
+  
+  // 1. 停止文件监听
+  hotReload.stopAll();
+  
+  // 2. 停止所有子进程
   workerManager.cleanup();
+  console.log('✓ 子进程已清理');
+  
+  // 3. 关闭所有 WebSocket 连接
+  const clients = Array.from(wss.clients);
+  if (clients.length > 0) {
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN || client.readyState === WebSocket.CONNECTING) {
+        client.terminate(); // 强制关闭连接
+      }
+    });
+  }
+  
+  // 4. 关闭 WebSocket 服务器
   wss.close(() => {
+    console.log('✓ WebSocket 服务器已关闭');
+  });
+  
+  // 5. 关闭 HTTP 服务器
+  httpServer.close(() => {
+    console.log('✓ HTTP 服务器已关闭');
     process.exit(0);
   });
-});
+  
+  // 设置超时，强制退出（避免卡住）
+  setTimeout(() => {
+    console.log('⚠ 超时，强制退出...');
+    process.exit(1);
+  }, 3000);
+}
 
-server.listen(8080, () => {
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+
+httpServer.listen(8080, () => {
   console.log('服务器运行在端口 8080');
   console.log('WebSocket 服务器运行在端口 8081');
 });

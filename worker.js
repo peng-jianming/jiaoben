@@ -37,6 +37,8 @@ function createStatusUpdater() {
 
 // 处理主进程消息
 process.on('message', async (message) => {
+    console.log('收到来自主进程的信息:', message);
+    
     currentHwnd = message.hwnd;
 
     try {
@@ -46,6 +48,9 @@ process.on('message', async (message) => {
                 break;
             case 'stop':
                 handleStop();
+                break;
+            case 'reload':
+                handleReload(message);
                 break;
             default:
                 console.warn('未知消息类型:', message.type);
@@ -160,4 +165,30 @@ function handleStop() {
     }
     
     updateStatus('stopped');
+}
+
+/**
+ * 处理重载任务
+ */
+function handleReload(message) {
+    const { taskName } = message;
+    
+    if (taskName && taskName !== 'all') {
+        // 重新加载指定任务
+        const success = taskRegistry.reloadTask(taskName);
+        if (success) {
+            console.log(`[Worker ${currentHwnd}] 任务 ${taskName} 已重新加载`);
+        }
+    } else {
+        // 重新加载所有任务
+        const count = taskRegistry.reloadAllTasks();
+        console.log(`[Worker ${currentHwnd}] 已重新加载 ${count} 个任务`);
+    }
+    
+    // 通知主进程重载完成
+    process.send({
+        type: 'reloadComplete',
+        taskName: taskName || 'all',
+        hwnd: currentHwnd
+    });
 }

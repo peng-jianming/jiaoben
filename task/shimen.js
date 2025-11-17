@@ -9,8 +9,8 @@ class Shimen extends Mhxy {
         super(hwnd, changeProp)
     }
     async start() {
-        console.log('2222222');
-        this.changeProp('status', "222222")
+        console.log('222222277');
+        this.changeProp('status', "22222212")
         // new StateMachine(() => {
 
         // })
