@@ -1,5 +1,5 @@
 const Jimp = require('jimp');
-const cv = require('../opencv.js');
+const cv = require('./opencv.js');
 const path = require('path')
 
 

@@ -1,5 +1,5 @@
 const Jimp = require('jimp');
-const cv = require('../opencv.js');
+const cv = require('./opencv.js');
 const path = require('path')
 function 将十六进制颜色转换为BGR对象(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

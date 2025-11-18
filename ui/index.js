@@ -1,9 +1,9 @@
-import demo from './demoComponent.js'
+import Index from './components/index.js'
 
 new Vue({
     el: '#app',
     components: {
-        demo
+        Index
     },
     data() {
         return {
@@ -35,12 +35,19 @@ new Vue({
                     // 添加新项
                     this.list.push(result.data);
                 }
+            } else if (result.type == "refresh") {
+                // UI 文件变化，自动刷新页面
+                console.log(result.data.message);
+                // 延迟一小段时间再刷新，确保消息已处理
+                setTimeout(() => {
+                    location.reload();
+                }, 100);
             }
         };
     },
     template: `
     <div>
-        <demo :deviceList="list" :socket="socket"/>
+        <Index :deviceList="list" :socket="socket"/>
     </div>
     `
 });

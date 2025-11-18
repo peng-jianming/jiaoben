@@ -10,6 +10,12 @@ class Demo extends Mhxy {
         // if (result) {
         //     await this.ADB左键点击(result)
         // }
+        let i= 0
+        while(this.flag) {
+            console.log('1111111');
+            this.changeProp('status', i++)
+            await this.延时(2000)
+        }
         console.log('1111111');
         this.changeProp('status', "11111111")
         await this.延时(2000)

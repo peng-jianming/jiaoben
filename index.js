@@ -83,6 +83,22 @@ hotReload.on('workerChanged', ({ filePath }) => {
 hotReload.on('uiChanged', ({ filePath, filename }) => {
     console.log(`\n🔄 UI 文件已修改: ${filename}`);
     console.log(`   文件路径: ${filePath}`);
+    
+    // 通知所有客户端刷新页面
+    const refreshMessage = JSON.stringify({
+        type: 'refresh',
+        data: {
+            filename,
+            message: `UI 文件 ${filename} 已修改，页面将自动刷新`
+        }
+    });
+    
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(refreshMessage);
+            console.log(`✓ 已通知客户端刷新页面`);
+        }
+    });
 });
 
 app.use(bodyParser.json());

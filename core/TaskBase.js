@@ -1,5 +1,4 @@
 const { 多点关联颜色匹配, 多点颜色匹配 } = require('../tools/colorMatching.js')
-const { 图片匹配 } = require('../tools/imageMatching.js')
 const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
 
 /**
