@@ -87,6 +87,7 @@ async function handleStart(message) {
                     currentTask.stop();
                 }
                 currentTask = new TaskClass(message.hwnd, statusUpdater);
+                updateData({ 'status': `${taskName}` });
                 await currentTask.start();
             } catch (error) {
                 console.error(`任务 ${taskName} 执行失败:`, error);

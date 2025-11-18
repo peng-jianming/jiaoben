@@ -166,6 +166,7 @@ class WorkerManager extends EventEmitter {
             status: data.status,
             lastUpdate: this.formatDate(data.lastUpdate),
             // 其他字段根据实际情况添加,但是不能影响前四个字段
+            action: data.action
         }
     }
 }

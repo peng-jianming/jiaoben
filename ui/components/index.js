@@ -38,7 +38,9 @@ export default {
             </el-table-column>
             <el-table-column prop="name" label="窗口名" width="180">
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="180">
+            <el-table-column prop="status" label="当前任务" width="180">
+            </el-table-column>
+            <el-table-column prop="action" label="当前动作" width="180">
             </el-table-column>
             <el-table-column label="操作" >
                 <template slot-scope="scope">

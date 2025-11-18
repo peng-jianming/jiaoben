@@ -13,12 +13,9 @@ class Demo extends Mhxy {
         let i= 0
         while(this.flag) {
             console.log('1111111');
-            this.changeProp('status', i++)
+            this.changeProp('action', i++)
             await this.延时(2000)
         }
-        console.log('1111111');
-        this.changeProp('status', "11111111")
-        await this.延时(2000)
         // await this.ADB滑动({ x: 527, y: 1000 }, { x: 527, y: 500 })
     }
 }
