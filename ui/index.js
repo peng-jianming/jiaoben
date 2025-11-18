@@ -22,8 +22,19 @@ new Vue({
             const result = JSON.parse(event.data)
             console.log(`收到消息:`, result);
 
-            if (result.type == "update") {
-                this.list = result.data
+            if (result.type == "init") {
+                // 全量更新：初始化或重置时使用
+                this.list = result.data.list
+            } else if (result.type == "updateItem") {
+                // 更新或添加 worker
+                const index = this.list.findIndex(item => item.hwnd === result.data.hwnd);
+                if (index >= 0) {
+                    // 更新现有项
+                    this.$set(this.list, index, result.data);
+                } else {
+                    // 添加新项
+                    this.list.push(result.data);
+                }
             }
         };
     },

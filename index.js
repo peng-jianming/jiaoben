@@ -6,15 +6,13 @@ const hotReload = require('./hotReload');
 
 // 引入核心框架模块
 const WorkerManager = require('./core/WorkerManager');
-const MessageHandler = require('./core/MessageHandler');
 
 const app = express();
 const httpServer = require('http').createServer(app);
 const wss = new WebSocket.Server({ port: 8081 });
 
-// 初始化管理器
-const workerManager = new WorkerManager();
-const messageHandler = new MessageHandler(workerManager, wss);
+// 初始化管理器（合并了 MessageHandler 的功能）
+const workerManager = new WorkerManager(wss);
 
 // ==================== 热重载功能 ====================
 // 监听根目录（用于 worker.js 和 index.js）
@@ -78,7 +76,7 @@ hotReload.on('workerChanged', ({ filePath }) => {
     workerManager.cleanup();
     
     // 重新初始化所有设备
-    messageHandler.handleInit();
+    workerManager.handleInit();
 });
 
 // 处理 UI 文件变化
@@ -114,14 +112,14 @@ wss.on('connection', (ws) => {
   console.log('新的 WebSocket 连接');
 
   // 初始化或者获取设备列表给客户端
-  messageHandler.handleInit();
+  workerManager.handleInit();
 
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
       console.log("收到来自客户端的信息:", data, );
       
-      messageHandler.handleClientMessage(data);
+      workerManager.handleClientMessage(data);
       
     } catch (error) {
       console.error('处理 WebSocket 消息失败:', error);
