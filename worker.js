@@ -9,8 +9,7 @@ let taskLoop = null // 任务循环定时器
  */
 function updateData(data) {
     process.send({
-        type: 'update',
-        data,
+        ...data,
         hwnd: currentHwnd
     });
 }
