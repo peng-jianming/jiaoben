@@ -66,12 +66,16 @@ async function handleStart(message) {
     const executeTasks = async () => {
         // 检查是否被停止
         if (currentTask && currentTask.flag === false) {
+            currentTask = null;
+            updateData({ 'status': '空闲中' });
             return;
         }
 
         for (const taskName of taskList) {
             // 再次检查是否被停止
             if (currentTask && currentTask.flag === false) {
+                currentTask = null;
+                updateData({ 'status': '空闲中' });
                 break;
             }
 
@@ -89,9 +93,22 @@ async function handleStart(message) {
                 currentTask = new TaskClass(message.hwnd, statusUpdater);
                 updateData({ 'status': `${taskName}` });
                 await currentTask.start();
+                
+                // 任务执行完成后，检查是否被停止
+                if (currentTask && currentTask.flag === false) {
+                    currentTask = null;
+                    updateData({ 'status': '空闲中' });
+                    return;
+                }
             } catch (error) {
                 console.error(`任务 ${taskName} 执行失败:`, error);
                 updateData({ 'status': `任务 ${taskName} 执行失败` });
+                // 如果是因为停止导致的错误，更新状态为空闲
+                if (currentTask && currentTask.flag === false) {
+                    currentTask = null;
+                    updateData({ 'status': '空闲中' });
+                    return;
+                }
                 throw error;
             }
         }
@@ -121,14 +138,26 @@ async function handleStart(message) {
     } else {
         // 单次执行
         await executeTasks();
-        updateData({ 'status': '空闲中' });
+        // 如果任务没有被停止（currentTask 还存在且 flag 不为 false），更新状态为空闲中
+        // 如果任务被停止了，executeTasks 中已经将 currentTask 设为 null 并更新了状态
+        if (currentTask && currentTask.flag !== false) {
+            updateData({ 'status': '空闲中' });
+        } else if (!currentTask) {
+            // 如果 currentTask 为 null，说明任务被停止了，状态已经在 executeTasks 中更新
+            // 这里不需要再次更新
+        }
     }
 }
 
 /**
- * 处理停止任务
+ * 处理停止任务, 先尝试任务中停止, 如果任务中没有停止, 则强制停止
  */
 function handleStop() {
+    console.log('收到停止任务请求');
+    
+    // 立即更新状态，让主进程知道正在停止（但不立即设为空闲中）
+    updateData({ 'status': '正在停止...' });
+    
     // 停止任务循环
     if (taskLoop) {
         clearInterval(taskLoop);
@@ -137,16 +166,23 @@ function handleStop() {
 
     // 停止当前任务
     if (currentTask) {
-        if (typeof currentTask.stop === 'function') {
-            currentTask.stop();
-        }
-        // 设置标志位停止循环
+        // 先设置标志位，让任务能够快速响应
         if (currentTask.flag !== undefined) {
             currentTask.flag = false;
         }
-        currentTask = null;
+        // 然后调用 stop 方法
+        if (typeof currentTask.stop === 'function') {
+            try {
+                currentTask.stop();
+            } catch (error) {
+                console.error('调用任务 stop 方法时出错:', error);
+            }
+        }
+        // 注意：不立即清空 currentTask，让 executeTasks 能够检测到停止
     }
-    updateData({ 'status': '空闲中' });
+    
+    // 不立即更新状态为空闲，等待任务真正停止后再更新
+    // 状态更新将在 executeTasks 完成后进行
 }
 
 /**

@@ -1,6 +1,7 @@
 const TaskBase = require('../core/TaskBase');
 const 配置 = require('./config.js')
 
+
 /**
  * 任务基类（兼容性包装）
  * 为了保持向后兼容，保留 Mhxy 类名

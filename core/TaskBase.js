@@ -43,16 +43,53 @@ class TaskBase {
     
     /**
      * 随机区间时间（毫秒）
+     * @param {number} startMs - 起始时间（毫秒）
+     * @param {number} endMs - 结束时间（毫秒）
+     * @returns {number} 返回 [startMs, endMs] 范围内的随机毫秒数
      */
-    随机区间时间(startSec, endSec) {
-        return Math.floor(Math.random() * (endSec - startSec) * 1000) + startSec * 1000;
+    随机区间时间(startMs, endMs) {
+        // 确保 startMs <= endMs
+        if (startMs > endMs) {
+            [startMs, endMs] = [endMs, startMs];
+        }
+        // 生成包含两端点的随机整数
+        return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
     }
     
     /**
      * 延时
+     * 如果 flag 为 false，会立即返回，不会等待
      */
     延时(time) {
-        return new Promise(resolve => setTimeout(resolve, time));
+        return new Promise((resolve) => {
+            if (!this.flag) {
+                resolve();
+                return;
+            }
+            
+            const startTime = Date.now();
+            const interval = 50; // 每50ms检查一次flag
+            
+            const checkInterval = setInterval(() => {
+                if (!this.flag) {
+                    clearInterval(checkInterval);
+                    clearTimeout(timeout);
+                    resolve();
+                    return;
+                }
+                
+                // 如果已经过了指定时间，也结束
+                if (Date.now() - startTime >= time) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, interval);
+            
+            const timeout = setTimeout(() => {
+                clearInterval(checkInterval);
+                resolve();
+            }, time);
+        });
     }
 
     // ==================== 颜色匹配 ====================

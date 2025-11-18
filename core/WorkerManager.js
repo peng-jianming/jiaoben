@@ -61,19 +61,136 @@ class WorkerManager extends EventEmitter {
     }
 
     /**
+     * 停止任务（带超时强制重启机制）
+     * @param {string} hwnd - 设备句柄
+     * @param {number} timeout - 超时时间（毫秒），默认3000ms
+     * @returns {Promise<boolean>} - 是否成功停止（true=正常停止，false=强制重启）
+     */
+    async stopTask(hwnd, timeout = 3000) {
+        const workerInfo = this.workers.get(hwnd);
+        if (!workerInfo) {
+            console.warn(`Worker ${hwnd} not found`);
+            return false;
+        }
+
+        const stopStartTime = Date.now();
+
+        // 发送停止消息
+        try {
+            this.sendToWorker(hwnd, { type: 'stop' });
+        } catch (error) {
+            console.error(`发送停止消息到 ${hwnd} 失败:`, error);
+            return false;
+        }
+
+        // 等待任务停止，检查状态变化
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                const currentStatus = workerInfo.status;
+                const elapsed = Date.now() - stopStartTime;
+
+                // 如果状态变为空闲，说明正常停止了
+                if (currentStatus === '空闲中') {
+                    clearInterval(checkInterval);
+                    clearTimeout(timeoutTimer);
+                    console.log(`任务 ${hwnd} 正常停止`);
+                    resolve(true);
+                    return;
+                }
+
+                // 如果状态是"正在停止..."，说明正在停止中，继续等待
+                // 如果状态不是"正在停止..."也不是"空闲中"，且已经过了超时时间，强制重启
+                if (currentStatus !== '正在停止...' && currentStatus !== '空闲中' && elapsed >= timeout) {
+                    clearInterval(checkInterval);
+                    clearTimeout(timeoutTimer);
+                    console.warn(`任务 ${hwnd} 在 ${timeout}ms 内未停止（状态：${currentStatus}），强制重启子进程`);
+                    this.forceRestartWorker(hwnd);
+                    resolve(false);
+                    return;
+                }
+
+                // 如果状态是"正在停止..."但超时了，强制重启
+                if (currentStatus === '正在停止...' && elapsed >= timeout) {
+                    clearInterval(checkInterval);
+                    clearTimeout(timeoutTimer);
+                    console.warn(`任务 ${hwnd} 在 ${timeout}ms 内未停止（仍在停止中），强制重启子进程`);
+                    this.forceRestartWorker(hwnd);
+                    resolve(false);
+                    return;
+                }
+            }, 100); // 每100ms检查一次
+
+            // 超时定时器（备用）
+            const timeoutTimer = setTimeout(() => {
+                clearInterval(checkInterval);
+                const finalStatus = workerInfo.status;
+                console.warn(`任务 ${hwnd} 停止超时（最终状态：${finalStatus}），强制重启子进程`);
+                this.forceRestartWorker(hwnd);
+                resolve(false);
+            }, timeout);
+        });
+    }
+
+    /**
+     * 强制重启工作进程
+     * @param {string} hwnd - 设备句柄
+     */
+    forceRestartWorker(hwnd) {
+        const workerInfo = this.workers.get(hwnd);
+        if (!workerInfo) {
+            console.warn(`Worker ${hwnd} not found, cannot restart`);
+            return;
+        }
+
+        const name = workerInfo.name;
+        const process = workerInfo.process;
+
+        // 强制结束旧进程
+        try {
+            if (process && !process.killed) {
+                process.kill('SIGKILL'); // 强制终止
+            }
+        } catch (error) {
+            console.error(`强制终止进程 ${hwnd} 失败:`, error);
+        }
+
+        // 从 workers Map 中移除
+        this.workers.delete(hwnd);
+
+        // 等待一小段时间确保进程完全退出
+        setTimeout(() => {
+            // 重新创建新的工作进程
+            this.initWorker(hwnd, name);
+            console.log(`工作进程 ${hwnd} 已强制重启`);
+        }, 100);
+    }
+
+    /**
      * 处理来自客户端的 WebSocket 消息
      */
     handleClientMessage(message) {
         const { deviceList } = message;
         if (deviceList) {
             const hwnds = deviceList.map(device => device.hwnd);
-            hwnds.forEach(hwnd => {
-                try {
-                    this.sendToWorker(hwnd, message);
-                } catch (err) {
-                    console.error(`Failed to send message to ${hwnd}:`, err);
-                }
-            });
+
+            // 如果是停止消息，使用带超时的停止机制
+            if (message.type === 'stop') {
+                hwnds.forEach(hwnd => {
+                    // 异步执行，不阻塞
+                    this.stopTask(hwnd).catch(err => {
+                        console.error(`停止任务 ${hwnd} 失败:`, err);
+                    });
+                });
+            } else {
+                // 其他消息正常发送
+                hwnds.forEach(hwnd => {
+                    try {
+                        this.sendToWorker(hwnd, message);
+                    } catch (err) {
+                        console.error(`Failed to send message to ${hwnd}:`, err);
+                    }
+                });
+            }
         }
     }
 
