@@ -120,7 +120,7 @@ class TaskBase {
     async 左键点击(result) {
         if (result) {
             await 屏幕控制(this.hwnd, '0', String(result.x / this.width), String(result.y / this.height))
-            await this.延时(this.随机区间时间(200, 1000))
+            await this.延时(1000)
             await 屏幕控制(this.hwnd, '2', String(result.x / this.width), String(result.y / this.height))
         } else {
             console.log('左键点击坐标为空');

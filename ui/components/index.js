@@ -16,7 +16,7 @@ export default {
             this.socket.send(JSON.stringify({
                 type: 'start',
                 deviceList: list,
-                taskList: ['demo']
+                taskList: ['shimen']
             }))
             console.log("发送开始指令");
         },

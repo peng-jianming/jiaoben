@@ -33,7 +33,8 @@ module.exports = {
         const Y = new winax.Variant(-1, 'byref')
         const W = new winax.Variant(-1, 'byref')
         const H = new winax.Variant(-1, 'byref')
-        const ret = lh.LhFindPicMateFile(BigPicFile, SmallPicFile, X1, Y1, X2, Y2, sim, MatchMode, X, Y, W, H)        
+        const ret = lh.LhFindPicMateFile(BigPicFile, SmallPicFile, X1, Y1, X2, Y2, sim, MatchMode, X, Y, W, H)     
+           
         if (ret == 1) {
             return {
                 x: Number(X),
