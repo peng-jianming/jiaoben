@@ -28,7 +28,7 @@ module.exports = {
     lhSetPath(path) {
         return lh.LhSetPath(path)
     },
-    lhFindPicMateFile(BigPicFile, SmallPicFile, sim = 0.8, MatchMode = 5, X1 = 0, Y1 = 0, X2 = 0, Y2 = 0) {
+    lhFindPicMateFile(BigPicFile, SmallPicFile, sim = 0.8,  X1 = 0, Y1 = 0, X2 = 0, Y2 = 0, MatchMode = 5) {
         const X = new winax.Variant(-1, 'byref')
         const Y = new winax.Variant(-1, 'byref')
         const W = new winax.Variant(-1, 'byref')

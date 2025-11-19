@@ -111,7 +111,7 @@ class TaskBase {
      */
     async 获取图片宽高(imagePath) {
         try {
-            const image = await Jimp.read(imagePath);
+            const image = await Jimp.Jimp.read(imagePath);
             return {
                 width: image.bitmap.width,
                 height: image.bitmap.height

@@ -27,7 +27,13 @@ class Shimen extends Mhxy {
             })
             .on('打开师门界面', async () => {
                 // 点击活动界面师门参加按钮
-                await this.随机点击坐标(配置.活动界面师门参加按钮)
+                // const result = await this.查找(配置.活动界面师门任务位置, false)
+
+                // if (result) {
+                //     await this.查找并点击图片(配置.活动界面师门参加按钮)
+                // } else {
+
+                // }
 
                 await this.随机延时(1000, 3000)
 

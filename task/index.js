@@ -68,17 +68,21 @@ class Mhxy extends TaskBase {
 
     }
 
-    async 查找(目标信息) {
+    async 查找(目标信息, 是否随机坐标 = true) {
         // 是否传入大图,如果没有传入大图,则获取当前屏幕截图
         let url = 目标信息.大图路径 || await getScreen(this.hwnd)
-        this.changeProp('action', `查找${目标信息.标识}`)
+        // this.changeProp('action', `查找${目标信息.标识}`)
         if (目标信息.方式 == '找图') {
             const point = lihuo.lhFindPicMateFile(url, 目标信息.图片路径)
             if (point) {
                 this.changeProp('action', `找到${目标信息.标识}, 坐标: ${point.x}, ${point.y}`)
-                const { width, height } = await this.获取图片宽高(目标信息.图片路径)
-                const result = this.随机坐标(point.x, point.y, point.x + width, point.y + height)
-                return result
+                if(是否随机坐标) {
+                    const { width, height } = await this.获取图片宽高(目标信息.图片路径)
+                    const result = this.随机坐标(point.x, point.y, point.x + width, point.y + height)
+                    return result
+                } else {
+                    return point
+                }
             } else {
                 this.changeProp('action', `未找到${目标信息.标识}`)
                 return false;

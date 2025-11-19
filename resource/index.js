@@ -9,12 +9,19 @@ const 主界面活动按钮 = {
 const 活动界面 = {
     标识: '活动界面',
     方式: '找图',
-    图片路径: path.resolve(__dirname, 'common', `shimenjiemian.png`)
+    图片路径: path.resolve(__dirname, 'common', `huodongjiemian.png`)
 }
 
-const 活动界面师门参加按钮 = {
+const 活动界面师门任务位置 = {
     标识: '活动界面师门参加按钮',
-    区域: { x: 1858, y: 222, x2: 111, y2: 2222 },
+    方式: '找图',
+    图片路径: path.resolve(__dirname, 'shimen', `shimenrenwu.png`),
+}
+
+const 活动界面参加按钮 = {
+    标识: '活动界面师门参加按钮',
+    方式: '找图',
+    图片路径: path.resolve(__dirname, 'shimen', `canjia.png`),
 }
 
 const 师门界面继续任务按钮 = {
@@ -44,3 +51,7 @@ module.exports = {
     活动界面师门参加按钮
 }
 
+
+
+
+// .查找().点击()
