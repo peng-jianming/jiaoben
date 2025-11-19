@@ -76,7 +76,7 @@ class Mhxy extends TaskBase {
             const point = lihuo.lhFindPicMateFile(url, 目标信息.图片路径)
             if (point) {
                 this.changeProp('action', `找到${目标信息.标识}, 坐标: ${point.x}, ${point.y}`)
-                if(是否随机坐标) {
+                if (是否随机坐标) {
                     const { width, height } = await this.获取图片宽高(目标信息.图片路径)
                     const result = this.随机坐标(point.x, point.y, point.x + width, point.y + height)
                     return result
@@ -93,3 +93,51 @@ class Mhxy extends TaskBase {
 }
 
 module.exports = Mhxy
+
+
+
+
+// .查找().点击()
+
+class Action {
+    constructor({ 方式, 图片路径, 大图路径, 标识 }, 操作类) {
+        this.方式 = 方式;
+        this.图片路径 = 图片路径;
+        this.大图路径 = 大图路径;
+        this.标识 = 标识;
+        this.找到的坐标 = { x: 0, y: 0 }
+        this.操作类 = 操作类
+    }
+
+    async 查找() {
+        let url = this.大图路径 || await getScreen(this.hwnd)
+
+        if (this.方式 == '找图') {
+            const point = lihuo.lhFindPicMateFile(url, this.图片路径)
+            if (point) {
+                this.操作类.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+                this.找到的坐标 = point
+            } else {
+                this.操作类.changeProp('action', `未找到${this.标识}`)
+            }
+        }
+
+        return this
+    }
+
+
+    async 范围点击() {
+        const { width, height } = await this.操作类.获取图片宽高(this.图片路径)
+        const result = this.操作类.随机坐标(this.找到的坐标.x, this.找到的坐标.y, width, height)
+        if (result) {
+
+        } else {
+
+        }
+        return this
+    }
+
+    点击(坐标) {
+
+    }
+}
