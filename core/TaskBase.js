@@ -1,5 +1,6 @@
 const { 多点关联颜色匹配, 多点颜色匹配 } = require('../tools/colorMatching.js')
 const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
+const Jimp = require('jimp')
 
 /**
  * 任务基类
@@ -11,20 +12,20 @@ class TaskBase {
     height = 1080
     flag = true
     hwnd = 0
-    
+
     constructor(hwnd, changeProp, params = {}) {
         this.hwnd = hwnd
         this.changeProp = changeProp;
         this.params = params; // 任务参数
     }
-    
+
     /**
      * 停止任务
      */
     stop() {
         this.flag = false;
     }
-    
+
     /**
      * 启动任务（子类必须实现）
      */
@@ -33,14 +34,21 @@ class TaskBase {
     }
 
     // ==================== 工具方法 ====================
-    
+
     /**
      * 随机区间位置
      */
     随机区间位置(start, end) {
         return Math.floor(Math.random() * (end - start)) + start;
     }
-    
+
+    随机坐标(x1, y1, x2, y2) {
+        return {
+            x: this.随机区间位置(x1, x2),
+            y: this.随机区间位置(y1, y2)
+        }
+    }
+
     /**
      * 随机区间时间（毫秒）
      * @param {number} startMs - 起始时间（毫秒）
@@ -55,7 +63,7 @@ class TaskBase {
         // 生成包含两端点的随机整数
         return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
     }
-    
+
     /**
      * 延时
      * 如果 flag 为 false，会立即返回，不会等待
@@ -66,10 +74,10 @@ class TaskBase {
                 resolve();
                 return;
             }
-            
+
             const startTime = Date.now();
             const interval = 50; // 每50ms检查一次flag
-            
+
             const checkInterval = setInterval(() => {
                 if (!this.flag) {
                     clearInterval(checkInterval);
@@ -77,14 +85,14 @@ class TaskBase {
                     resolve();
                     return;
                 }
-                
+
                 // 如果已经过了指定时间，也结束
                 if (Date.now() - startTime >= time) {
                     clearInterval(checkInterval);
                     resolve();
                 }
             }, interval);
-            
+
             const timeout = setTimeout(() => {
                 clearInterval(checkInterval);
                 resolve();
@@ -92,8 +100,30 @@ class TaskBase {
         });
     }
 
+    随机延时(startMs, endMs) {
+        return this.延时(this.随机区间时间(startMs, endMs));
+    }
+
+    /**
+     * 获取图片宽高
+     * @param {string} imagePath - 图片路径
+     * @returns {Promise<{width: number, height: number}>} 返回图片的宽高对象
+     */
+    async 获取图片宽高(imagePath) {
+        try {
+            const image = await Jimp.read(imagePath);
+            return {
+                width: image.bitmap.width,
+                height: image.bitmap.height
+            };
+        } catch (error) {
+            console.error('读取图片失败:', error);
+            throw error;
+        }
+    }
+
     // ==================== 颜色匹配 ====================
-    
+
     /**
      * 多点关联颜色匹配
      * 返回找到的坐标 { x: 0, y: 0 }, 没找到返回 null
@@ -113,7 +143,7 @@ class TaskBase {
     }
 
     // ==================== 屏幕操作 ====================
-    
+
     /**
      * 左键点击
      */
