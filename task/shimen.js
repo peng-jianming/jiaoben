@@ -26,7 +26,7 @@ class Shimen extends Mhxy {
                 // 点击活动界面师门参加按钮
                 const ponit = await 配置.活动界面师门任务.查找()
 
-                const ponit1 = await 配置.活动界面参加按钮.设置查找区域({ x1: ponit.x, y1: ponit.y, x2: ponit.x + 262, y2: ponit.y + 62 }).查找并点击()
+                const ponit1 = await 配置.活动界面参加按钮.设置查找区域({ x1: ponit.x, y1: ponit.y, x2: ponit.x + 442, y2: ponit.y + 123 }).查找并点击()
 
                 await this.随机延时(1000, 3000)
 
@@ -57,7 +57,7 @@ class Shimen extends Mhxy {
             })
             .on('做师门任务', () => {
                 console.log('正在做师门任务');
-
+                
                 // new StateMachine(() => {
                 //     if(this.findImage('TP\师门\跳过对话.bmp')) {
                 //         return '跳过对话'
