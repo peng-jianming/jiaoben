@@ -8,36 +8,16 @@ const Jimp = require('jimp')
  * 提供通用的屏幕操作、颜色匹配、图片匹配等功能
  */
 class TaskBase {
-    width = 2400
-    height = 1080
     flag = true
-    hwnd = 0
 
-    constructor(hwnd, changeProp, params = {}) {
-        this.hwnd = hwnd
-        this.changeProp = changeProp;
-        this.params = params; // 任务参数
-    }
-
-    /**
-     * 停止任务
-     */
     stop() {
         this.flag = false;
     }
 
-    /**
-     * 启动任务（子类必须实现）
-     */
     async start() {
-        throw new Error('start() method must be implemented by subclass');
+        throw new Error('子类必须实现start()方法');
     }
 
-    // ==================== 工具方法 ====================
-
-    /**
-     * 随机区间位置
-     */
     随机区间位置(start, end) {
         return Math.floor(Math.random() * (end - start)) + start;
     }
@@ -49,12 +29,6 @@ class TaskBase {
         }
     }
 
-    /**
-     * 随机区间时间（毫秒）
-     * @param {number} startMs - 起始时间（毫秒）
-     * @param {number} endMs - 结束时间（毫秒）
-     * @returns {number} 返回 [startMs, endMs] 范围内的随机毫秒数
-     */
     随机区间时间(startMs, endMs) {
         // 确保 startMs <= endMs
         if (startMs > endMs) {
@@ -64,10 +38,6 @@ class TaskBase {
         return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
     }
 
-    /**
-     * 延时
-     * 如果 flag 为 false，会立即返回，不会等待
-     */
     延时(time) {
         return new Promise((resolve) => {
             if (!this.flag) {
@@ -104,11 +74,6 @@ class TaskBase {
         return this.延时(this.随机区间时间(startMs, endMs));
     }
 
-    /**
-     * 获取图片宽高
-     * @param {string} imagePath - 图片路径
-     * @returns {Promise<{width: number, height: number}>} 返回图片的宽高对象
-     */
     async 获取图片宽高(imagePath) {
         try {
             const image = await Jimp.Jimp.read(imagePath);
@@ -122,44 +87,16 @@ class TaskBase {
         }
     }
 
-    // ==================== 颜色匹配 ====================
-
-    /**
-     * 多点关联颜色匹配
-     * 返回找到的坐标 { x: 0, y: 0 }, 没找到返回 null
-     */
-    async 多点关联颜色匹配(信息) {
-        const url = await getScreen(this.hwnd)
-        return 多点关联颜色匹配(信息.特征, url, 信息.相似度, 信息.区域)
-    }
-
-    /**
-     * 多点颜色匹配
-     * 返回 true or false
-     */
-    async 多点颜色匹配(信息) {
-        const url = await getScreen(this.hwnd)
-        return 多点颜色匹配(信息.特征, url, 信息.相似度, 信息.区域)
-    }
-
-    // ==================== 屏幕操作 ====================
-
-    /**
-     * 左键点击
-     */
     async 左键点击(result) {
         if (result) {
-            await 屏幕控制(this.hwnd, '0', String(result.x / this.width), String(result.y / this.height))
+            await 屏幕控制(global.hwnd, '0', String(result.x / this.width), String(result.y / this.height))
             await this.延时(1000)
-            await 屏幕控制(this.hwnd, '2', String(result.x / this.width), String(result.y / this.height))
+            await 屏幕控制(global.hwnd, '2', String(result.x / this.width), String(result.y / this.height))
         } else {
             console.log('左键点击坐标为空');
         }
     }
 
-    /**
-     * 滑动
-     */
     async 滑动(result1, result2) {
         if (result1 && result2) {
             function 获取贝塞尔曲线(qx, qy, zx, zy) {
@@ -251,7 +188,7 @@ class TaskBase {
 
                 // 使用ADB motionevent命令模拟完整滑动轨迹
                 // 按下起点
-                调用ADB(this.hwnd, `input motionevent DOWN ${arr[0][0]} ${arr[0][1]}`);
+                调用ADB(global.hwnd, `input motionevent DOWN ${arr[0][0]} ${arr[0][1]}`);
 
                 // 初始按下后的小延迟
                 await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 10));
@@ -259,19 +196,19 @@ class TaskBase {
                 // 移动到各个中间点 - 不等待ADB响应，连续发送命令使滑动更连贯
                 for (let i = 1; i < arr.length - 1; i++) {
                     const point = arr[i];
-                    调用ADB(this.hwnd, `input motionevent MOVE ${point[0]} ${point[1]}`);
+                    调用ADB(global.hwnd, `input motionevent MOVE ${point[0]} ${point[1]}`);
                     await new Promise(resolve => setTimeout(resolve, Math.max(5, 延时模式[i])));
                 }
 
                 // 移动到终点
                 const lastPoint = arr[arr.length - 1];
-                调用ADB(this.hwnd, `input motionevent MOVE ${lastPoint[0]} ${lastPoint[1]}`);
+                调用ADB(global.hwnd, `input motionevent MOVE ${lastPoint[0]} ${lastPoint[1]}`);
 
                 // 抬起前的微小停顿
                 await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 20));
 
                 // 在终点抬起
-                await 调用ADB(this.hwnd, `input motionevent UP ${lastPoint[0]} ${lastPoint[1]}`);
+                await 调用ADB(global.hwnd, `input motionevent UP ${lastPoint[0]} ${lastPoint[1]}`);
 
             } catch (error) {
                 console.log('滑动过程中出错:', error);
@@ -282,25 +219,19 @@ class TaskBase {
         }
     }
 
-    /**
-     * ADB左键点击
-     */
     async ADB左键点击(result) {
         if (result) {
             // 按下
-            await 调用ADB(this.hwnd, `input motionevent DOWN ${result.x} ${result.y}`)
+            await 调用ADB(global.hwnd, `input motionevent DOWN ${result.x} ${result.y}`)
             // 保持指定时长
             await this.延时(this.随机区间时间(300, 800))
             // 弹起
-            await 调用ADB(this.hwnd, `input motionevent UP ${result.x} ${result.y}`)
+            await 调用ADB(global.hwnd, `input motionevent UP ${result.x} ${result.y}`)
         } else {
             console.log('左键点击坐标为空');
         }
     }
 
-    /**
-     * ADB滑动
-     */
     async ADB滑动(result1, result2) {
         if (result1 && result2) {
             function 获取贝塞尔曲线(qx, qy, zx, zy) {
@@ -392,7 +323,7 @@ class TaskBase {
 
                 // 使用ADB motionevent命令模拟完整滑动轨迹
                 // 按下起点
-                await 调用ADB(this.hwnd, `input motionevent DOWN ${arr[0][0]} ${arr[0][1]}`);
+                await 调用ADB(global.hwnd, `input motionevent DOWN ${arr[0][0]} ${arr[0][1]}`);
 
                 // 初始按下后的小延迟
                 await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 10));
@@ -400,19 +331,19 @@ class TaskBase {
                 // 移动到各个中间点 - 不等待ADB响应，连续发送命令使滑动更连贯
                 for (let i = 1; i < arr.length - 1; i++) {
                     const point = arr[i];
-                    await 调用ADB(this.hwnd, `input motionevent MOVE ${point[0]} ${point[1]}`);
+                    await 调用ADB(global.hwnd, `input motionevent MOVE ${point[0]} ${point[1]}`);
                     await new Promise(resolve => setTimeout(resolve, Math.max(5, 延时模式[i])));
                 }
 
                 // 移动到终点
                 const lastPoint = arr[arr.length - 1];
-                await 调用ADB(this.hwnd, `input motionevent MOVE ${lastPoint[0]} ${lastPoint[1]}`);
+                await 调用ADB(global.hwnd, `input motionevent MOVE ${lastPoint[0]} ${lastPoint[1]}`);
 
                 // 抬起前的微小停顿
                 await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 20));
 
                 // 在终点抬起
-                await 调用ADB(this.hwnd, `input motionevent UP ${lastPoint[0]} ${lastPoint[1]}`);
+                await 调用ADB(global.hwnd, `input motionevent UP ${lastPoint[0]} ${lastPoint[1]}`);
 
             } catch (error) {
                 console.log('ADB滑动过程中出错:', error);
@@ -423,9 +354,6 @@ class TaskBase {
         }
     }
 
-    /**
-     * 百分之十随机用户操作
-     */
     async 百分之十随机用户操作() {
         // 百分10的概率触发随机事件
         if (Math.random() < 0.1) {

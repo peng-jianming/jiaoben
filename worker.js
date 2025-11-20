@@ -54,7 +54,8 @@ process.on('message', async (message) => {
  */
 async function handleStart(message) {
     const { taskList, options = {} } = message;
-    const statusUpdater = createStatusUpdater();
+    global.hwnd = message.hwnd;
+    global.changeProp = createStatusUpdater();
 
     // 停止之前的任务循环
     if (taskLoop) {
@@ -90,7 +91,7 @@ async function handleStart(message) {
                 if (currentTask && typeof currentTask.stop === 'function') {
                     currentTask.stop();
                 }
-                currentTask = new TaskClass(message.hwnd, statusUpdater);
+                currentTask = new TaskClass();
                 updateData({ 'status': `${taskName}` });
                 await currentTask.start();
                 

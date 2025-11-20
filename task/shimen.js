@@ -4,9 +4,6 @@ const StateMachine = require('../tools/stateMachine2.js')
 const 配置 = require('../resource/index.js')
 
 class Shimen extends Mhxy {
-    constructor(hwnd, changeProp) {
-        super(hwnd, changeProp)
-    }
     async start() {
         const sta = new StateMachine(() => {
             // 操作 + 结果 + 下一状态
@@ -27,19 +24,15 @@ class Shimen extends Mhxy {
             })
             .on('打开师门界面', async () => {
                 // 点击活动界面师门参加按钮
-                // const result = await this.查找(配置.活动界面师门任务位置, false)
+                const ponit = await 配置.活动界面师门任务.查找()
 
-                // if (result) {
-                //     await this.查找并点击图片(配置.活动界面师门参加按钮)
-                // } else {
-
-                // }
+                const ponit1 = await 配置.活动界面参加按钮.设置查找区域({ x1: ponit.x, y1: ponit.y, x2: ponit.x + 262, y2: ponit.y + 62 }).查找并点击()
 
                 await this.随机延时(1000, 3000)
 
                 // 出现师门界面
-                const point = await this.查找(配置.师门界面)
-                if (point) {
+                const point2 = await 配置.师门界面.查找()
+                if (point2) {
                     return '接取师门任务'
                 } else {
                     return '回到主界面'
@@ -48,18 +41,18 @@ class Shimen extends Mhxy {
             .on('接取师门任务', async () => {
 
                 // 判断师门任务是否完成
-                const point = await this.查找并点击图片(配置.师门界面继续任务按钮);
+                const point = await 配置.师门界面继续任务按钮.查找并点击();
                 if (point) {
                     return '做师门任务'
                 }
 
-                const point1 = await this.查找并点击图片(配置.师门界面去完成按钮);
+                const point1 = await 配置.师门界面去完成按钮.查找并点击();
                 if (point1) {
                     return '做师门任务'
-                } else {
-                    this.changeProp('action', '师门任务已经完成')
-                    sta.stop()
                 }
+
+                global.changeProp('action', '师门任务已经完成')
+                sta.stop()
 
             })
             .on('做师门任务', () => {
