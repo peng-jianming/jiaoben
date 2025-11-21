@@ -3,13 +3,17 @@ const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
 const lihuo = require('./lihuo')
 
 class Field {
-    constructor({ 方式, 图片路径, 大图路径, 标识, 相似度, 区域 }) {
+    constructor({ 方式, 图片路径, 大图路径, 标识, 相似度, 区域, 字库序号, 字库路径, 文字, 偏色 }) {
         this.方式 = 方式;
         this.图片路径 = 图片路径;
         this.大图路径 = 大图路径;
         this.标识 = 标识;
         this.相似度 = 相似度 || 0.8
         this.区域 = 区域 || { x1: 0, y1: 0, x2: 0, y2: 0 }
+        this.字库序号 = 字库序号
+        this.字库路径 = 字库路径
+        this.文字 = 文字
+        this.偏色 = 偏色
     }
 
     async _查找() {
@@ -24,6 +28,30 @@ class Field {
                 global.changeProp('action', `未找到${this.标识}`)
                 return false;
             }
+        }
+
+        if (this.方式 == '找字') {
+            lihuo.setDict(this.字库序号, this.字库路径)
+            const point = lihuo.FindStrFile(url, this.文字, this.字库序号, this.偏色, this.相似度, this.区域.x1, this.区域.y1, this.区域.x2, this.区域.y2)
+            if (point) {
+                global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+                return point
+            } else {
+                global.changeProp('action', `未找到${this.标识}`)
+                return false;
+            }
+        }
+        if (this.方式 == 'AI找字') {
+            const point = lihuo.ocrDetectFile(url, this.文字, this.相似度)
+            console.log(point, "tttttttttttttttttttt");
+            
+            // if (point) {
+            //     global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+            //     return point
+            // } else {
+            //     global.changeProp('action', `未找到${this.标识}`)
+            //     return false;
+            // }
         }
     }
 
@@ -51,6 +79,10 @@ class Field {
 
     设置查找区域(区域) {
         this.区域 = 区域
+        return this
+    }
+    设置大图路径(路径) {
+        this.大图路径 = 路径
         return this
     }
 

@@ -43,7 +43,15 @@ const 师门界面去完成按钮 = new Field({
     图片路径: path.resolve(__dirname, 'shimen', `shimenquwancheng.png`)
 })
 
-
+const 主界面_师门文字 = new Field({
+    标识: '主界面_师门文字',
+    方式: 'AI找字',
+    文字: '师门',
+    偏色: '#25-50',
+    字库序号: 0,
+    字库路径: path.resolve(__dirname, `ziku.txt`),
+    大图路径: path.resolve(__dirname, `img/bmp`, `555.bmp`)
+})
 
 module.exports = {
     主界面活动按钮,
@@ -53,6 +61,7 @@ module.exports = {
     师门界面,
     活动界面师门任务,
     活动界面参加按钮,
+    主界面_师门文字
 }
 
 
