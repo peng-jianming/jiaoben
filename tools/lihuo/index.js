@@ -83,11 +83,13 @@ module.exports = {
             return null
         }
 
-        // 创建一个 Buffer 作为文本输出变量，koffi 会自动将其作为指针传递
-        const Ret = Buffer.alloc(1024);
-        const result = lh.OcrDetectFile(ImgFile, Confidence, Ret,
+        const ret = new winax.Variant(-1, 'byref')
+        lh.OcrDetectFile(
+            ImgFile,
+            Confidence,
+            ret,
             50,                // Padding: 默认50
-            1024,              // MaxSideLen: 默认1024
+            1200,              // MaxSideLen: 默认1024
             0.5,               // BoxScoreThresh: 默认0.5
             0.3,               // BoxThresh: 固定0.3
             1.6,               // UnClipRatio: 默认1.6
@@ -95,11 +97,37 @@ module.exports = {
             1                  // MostAngle: 默认1启用
         );
 
-        console.log(result, "================");
+        return parseOcrResult(ret.toString())
 
-        // 将 Buffer 转换为字符串，找到第一个 null 字节的位置
-        const nullIndex = Ret.indexOf(0);
-        const text = nullIndex >= 0 ? Ret.slice(0, nullIndex).toString('utf8') : Ret.toString('utf8');
-        return text;
     }
+}
+
+function parseOcrResult(resultStr) {
+    if (!resultStr || resultStr.trim() === '') {
+        return [];
+    }
+
+    const results = [];
+    // 按行分割（|huanhang|）
+    const lines = resultStr.split('|huanhang|');
+
+    for (const line of lines) {
+        if (line.trim() === '') continue;
+
+        // 按字段分割（|fenge|）
+        const fields = line.split('|fenge|');
+
+        if (fields.length >= 12) {
+            const result = {
+                text: fields[0], // 识别文本
+                points: [fields[1], fields[2], fields[5], fields[6]],
+                width: parseInt(fields[9]),     // 宽度
+                height: parseInt(fields[10]),   // 高度
+                confidence: parseFloat(fields[11]) // 置信度
+            };
+            results.push(result);
+        }
+    }
+
+    return results;
 }

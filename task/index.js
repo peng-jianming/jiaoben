@@ -25,6 +25,9 @@ class Mhxy extends TaskBase {
         return !!point1
     }
 
+    async 战斗界面处理() {
+        
+    }
 
 
 

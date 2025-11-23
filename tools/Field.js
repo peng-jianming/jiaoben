@@ -1,6 +1,7 @@
 const Jimp = require('jimp')
 const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
 const lihuo = require('./lihuo')
+const { findImage } = require('../ccc')
 
 class Field {
     constructor({ 方式, 图片路径, 大图路径, 标识, 相似度, 区域, 字库序号, 字库路径, 文字, 偏色 }) {
@@ -8,7 +9,7 @@ class Field {
         this.图片路径 = 图片路径;
         this.大图路径 = 大图路径;
         this.标识 = 标识;
-        this.相似度 = 相似度 || 0.8
+        this.相似度 = 相似度 || 0.9
         this.区域 = 区域 || { x1: 0, y1: 0, x2: 0, y2: 0 }
         this.字库序号 = 字库序号
         this.字库路径 = 字库路径
@@ -18,6 +19,21 @@ class Field {
 
     async _查找() {
         let url = this.大图路径 || await getScreen(global.hwnd)
+
+        // 如果区域有效，则裁剪图片并覆盖原图
+        if (this.区域 && this.区域.x1 >= 0 && this.区域.y1 >= 0 && this.区域.x2 > this.区域.x1 && this.区域.y2 > this.区域.y1) {
+            try {
+                const image = await Jimp.Jimp.read(url);
+                const x = Math.floor(this.区域.x1);
+                const y = Math.floor(this.区域.y1);
+                const width = Math.floor(this.区域.x2 - this.区域.x1);
+                const height = Math.floor(this.区域.y2 - this.区域.y1);
+                const cropped = image.clone().crop({ x, y, w: width, h: height });
+                await cropped.write(url);
+            } catch (error) {
+                console.error('裁剪图片失败:', error);
+            }
+        }
 
         if (this.方式 == '找图') {
             const point = lihuo.lhFindPicMateFile(url, this.图片路径, this.相似度, this.区域.x1, this.区域.y1, this.区域.x2, this.区域.y2)
@@ -29,38 +45,24 @@ class Field {
                 return false;
             }
         }
-
-        if (this.方式 == '找字') {
-            lihuo.setDict(this.字库序号, this.字库路径)
-            const point = lihuo.FindStrFile(url, this.文字, this.字库序号, this.偏色, this.相似度, this.区域.x1, this.区域.y1, this.区域.x2, this.区域.y2)
+        if (this.方式 == 'opencv找图') {
+            const point = await findImage(url, this.图片路径, 30, this.相似度)
             if (point) {
                 global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
                 return point
             } else {
-                global.changeProp('action', `未找到${this.标识}`)
+                // global.changeProp('action', `未找到${this.标识}`)
                 return false;
             }
-        }
-        if (this.方式 == 'AI找字') {
-            const point = lihuo.ocrDetectFile(url, this.文字, this.相似度)
-            console.log(point, "tttttttttttttttttttt");
-            
-            // if (point) {
-            //     global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
-            //     return point
-            // } else {
-            //     global.changeProp('action', `未找到${this.标识}`)
-            //     return false;
-            // }
         }
     }
 
     async 查找并点击() {
         const point = await this._查找(this)
         if (point) {
-            global.changeProp('action', `点击${this.标识}`)
+            // global.changeProp('action', `点击${this.标识}`)
             const { width, height } = await this.获取图片宽高(this.图片路径)
-            const result = this.随机坐标(point.x, point.y, width, height)
+            const result = this.随机坐标(this.区域.x1 + point.x, this.区域.y1 + point.y, width, height)
             await this.ADB左键点击(result)
             return result
         } else {
@@ -144,3 +146,8 @@ class Field {
 
 
 module.exports = Field
+
+
+
+
+
