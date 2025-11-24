@@ -3,31 +3,81 @@ const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
 const lihuo = require('./lihuo')
 const { findImage } = require('../ccc')
 
+const 获取图片宽高 = async (imagePath) => {
+    try {
+        const image = await Jimp.Jimp.read(imagePath);
+        return {
+            width: image.bitmap.width,
+            height: image.bitmap.height
+        };
+    } catch (error) {
+        console.error('读取图片失败:', error);
+        throw error;
+    }
+}
+
+const 随机区间位置 = (start, end) => {
+    return Math.floor(Math.random() * (end - start)) + start;
+}
+
+const 随机区间时间 = (startMs, endMs) => {
+    if (startMs > endMs) {
+        [startMs, endMs] = [endMs, startMs];
+    }
+    // 生成包含两端点的随机整数
+    return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
+}
+
+const 随机坐标 = (x1, y1, width, height) => {
+    return {
+        x: 随机区间位置(x1, x1 + width),
+        y: 随机区间位置(y1, y1 + height)
+    }
+}
+
+const 延时 = (time) => {
+    return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+const 随机延时 = (startMs, endMs) => {
+    return 延时(随机区间时间(startMs, endMs));
+}
+
+const ADB左键点击 = async (result) => {
+    if (result) {
+        // 按下
+        await 调用ADB(global.hwnd, `input motionevent DOWN ${result.x} ${result.y}`)
+
+        await 随机延时(100, 500)
+        // 弹起
+        await 调用ADB(global.hwnd, `input motionevent UP ${result.x} ${result.y}`)
+    } else {
+        console.log('左键点击坐标为空');
+    }
+}
+
 class Field {
-    constructor({ 方式, 图片路径, 大图路径, 标识, 相似度, 区域, 字库序号, 字库路径, 文字, 偏色 }) {
+    constructor({ 方式, 图片路径, 标识, 相似度, 查找区域 }) {
         this.方式 = 方式;
         this.图片路径 = 图片路径;
-        this.大图路径 = 大图路径;
         this.标识 = 标识;
         this.相似度 = 相似度 || 0.9
-        this.区域 = 区域 || { x1: 0, y1: 0, x2: 0, y2: 0 }
-        this.字库序号 = 字库序号
-        this.字库路径 = 字库路径
-        this.文字 = 文字
-        this.偏色 = 偏色
+        this.查找区域 = 查找区域 || { x1: 0, y1: 0, x2: 0, y2: 0 }
+        this.x = 0
+        this.y = 0
     }
 
-    async _查找() {
-        let url = this.大图路径 || await getScreen(global.hwnd)
+    async 查找() {
+        let url = await getScreen(global.hwnd)
 
         // 如果区域有效，则裁剪图片并覆盖原图
-        if (this.区域 && this.区域.x1 >= 0 && this.区域.y1 >= 0 && this.区域.x2 > this.区域.x1 && this.区域.y2 > this.区域.y1) {
+        if (this.查找区域 && this.查找区域.x1 >= 0 && this.查找区域.y1 >= 0 && this.查找区域.x2 > this.查找区域.x1 && this.查找区域.y2 > this.查找区域.y1) {
             try {
                 const image = await Jimp.Jimp.read(url);
-                const x = Math.floor(this.区域.x1);
-                const y = Math.floor(this.区域.y1);
-                const width = Math.floor(this.区域.x2 - this.区域.x1);
-                const height = Math.floor(this.区域.y2 - this.区域.y1);
+                const x = Math.floor(this.查找区域.x1);
+                const y = Math.floor(this.查找区域.y1);
+                const width = Math.floor(this.查找区域.x2 - this.查找区域.x1);
+                const height = Math.floor(this.查找区域.y2 - this.查找区域.y1);
                 const cropped = image.clone().crop({ x, y, w: width, h: height });
                 await cropped.write(url);
             } catch (error) {
@@ -35,112 +85,68 @@ class Field {
             }
         }
 
-        if (this.方式 == '找图') {
-            const point = lihuo.lhFindPicMateFile(url, this.图片路径, this.相似度, this.区域.x1, this.区域.y1, this.区域.x2, this.区域.y2)
-            if (point) {
-                global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
-                return point
-            } else {
-                global.changeProp('action', `未找到${this.标识}`)
-                return false;
-            }
-        }
         if (this.方式 == 'opencv找图') {
             const point = await findImage(url, this.图片路径, 30, this.相似度)
             if (point) {
-                global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
-                return point
-            } else {
-                // global.changeProp('action', `未找到${this.标识}`)
-                return false;
+                // global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+                this.x = this.查找区域.x1 + point.x
+                this.y = this.查找区域.y1 + point.y
             }
         }
-    }
 
-    async 查找并点击() {
-        const point = await this._查找(this)
-        if (point) {
-            // global.changeProp('action', `点击${this.标识}`)
-            const { width, height } = await this.获取图片宽高(this.图片路径)
-            const result = this.随机坐标(this.区域.x1 + point.x, this.区域.y1 + point.y, width, height)
-            await this.ADB左键点击(result)
-            return result
-        } else {
-            return false
-        }
-    }
-
-    async 查找() {
-        const point = await this._查找(this)
-        if (point) {
-            return point
-        } else {
-            return false
-        }
-    }
-
-    设置查找区域(区域) {
-        this.区域 = 区域
-        return this
-    }
-    设置大图路径(路径) {
-        this.大图路径 = 路径
         return this
     }
 
-    async 获取图片宽高(imagePath) {
-        try {
-            const image = await Jimp.Jimp.read(imagePath);
-            return {
-                width: image.bitmap.width,
-                height: image.bitmap.height
-            };
-        } catch (error) {
-            console.error('读取图片失败:', error);
-            throw error;
+    async 点击(x, y, w, h) {
+        // 有传入x,y,但是没有传入w,h,则精确点击x,y坐标
+        if (x && y && !w && !h) {
+            await ADB左键点击({ x, y })
         }
-    }
 
-    随机区间位置(start, end) {
-        return Math.floor(Math.random() * (end - start)) + start;
-    }
-
-    随机坐标(x1, y1, width, height) {
-        return {
-            x: this.随机区间位置(x1, x1 + width),
-            y: this.随机区间位置(y1, y1 + height)
+        // 有传入x,y,也有传入w,h,则随机点击x,y,w,h范围内的坐标
+        if (x && y && w && h) {
+            const result = 随机坐标(x, y, w, h)
+            await ADB左键点击(result)
         }
-    }
 
-    随机区间时间(startMs, endMs) {
-        if (startMs > endMs) {
-            [startMs, endMs] = [endMs, startMs];
+        // 没有传入x,y,w,h,则根据查询到的结果进行范围点击
+        if (!x && !y && !w && !h) {
+            const { width, height } = await 获取图片宽高(this.图片路径)
+            const result = 随机坐标(this.x, this.y, width, height)
+            await ADB左键点击(result)
         }
-        // 生成包含两端点的随机整数
-        return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
+
+        return this
     }
 
-    延时(time) {
-        return new Promise((resolve) => {
-            setTimeout(resolve, time);
-        });
-    }
+    async 偏移点击(x, y, w, h) {
+        // 根据自身this.x和this.y来进行x,y,后,加上w,h进行随机点击
 
-    随机延时(startMs, endMs) {
-        return this.延时(this.随机区间时间(startMs, endMs));
-    }
-
-    async ADB左键点击(result) {
-        if (result) {
-            // 按下
-            await 调用ADB(global.hwnd, `input motionevent DOWN ${result.x} ${result.y}`)
-
-            await this.随机延时(300, 800)
-            // 弹起
-            await 调用ADB(global.hwnd, `input motionevent UP ${result.x} ${result.y}`)
-        } else {
-            console.log('左键点击坐标为空');
+        // 只有x,y,就精确点击x,y坐标
+        if (x && y && !w && !h) {
+            await ADB左键点击({ x: this.x + x, y: this.y + y })
         }
+        // x,y,w,h都传入,则随机点击x,y,w,h范围内的坐标
+        if (x && y && w && h) {
+            const result = 随机坐标(this.x + x, this.y + y, w, h)
+            await ADB左键点击(result)
+        }
+
+        return this
+    }
+
+    设置查找区域(查找区域) {
+        this.查找区域 = 查找区域
+        return this
+    }
+
+    async 随机延时(startMs, endMs) {
+        await 随机延时(startMs, endMs)
+        return this
+    }
+
+    是否找到() {
+        return this.x && this.y
     }
 }
 
@@ -150,4 +156,14 @@ module.exports = Field
 
 
 
+// 不断截图 保留相同像素,不同则设置为透明 制作一个新的透明图 (这个只适合有条件可以截取不同位置图片的情况)
 
+// 点击像素点,然后根据当前点击的像素点颜色,圈选图中所有相同颜色的像素点,支持点击多个,然后再点击确定,把未圈选的像素点,都设置为透明, 这样制作透明图
+
+
+
+
+
+// 查找一个, 根据查找的位置, 查找另外一个 (设为设为另外一个的查找区域)
+// 查找一个, 根据查找的位置, 设置点击区域
+// 查找一个, 然后随意点击一个位置

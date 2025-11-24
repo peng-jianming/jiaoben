@@ -1,12 +1,6 @@
-const { 多点关联颜色匹配, 多点颜色匹配 } = require('../tools/colorMatching.js')
 const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
 const Jimp = require('jimp')
-
-/**
- * 任务基类
- * 所有任务类都应该继承此类
- * 提供通用的屏幕操作、颜色匹配、图片匹配等功能
- */
+const { 随机区间时间, ADB左键点击, 百分之十随机用户操作 } = require('../tools/tools.js')
 class TaskBase {
     flag = true
 
@@ -18,25 +12,7 @@ class TaskBase {
         throw new Error('子类必须实现start()方法');
     }
 
-    随机区间位置(start, end) {
-        return Math.floor(Math.random() * (end - start)) + start;
-    }
-
-    随机坐标(x1, y1, x2, y2) {
-        return {
-            x: this.随机区间位置(x1, x2),
-            y: this.随机区间位置(y1, y2)
-        }
-    }
-
-    随机区间时间(startMs, endMs) {
-        // 确保 startMs <= endMs
-        if (startMs > endMs) {
-            [startMs, endMs] = [endMs, startMs];
-        }
-        // 生成包含两端点的随机整数
-        return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
-    }
+    随机区间时间 = 随机区间时间
 
     延时(time) {
         return new Promise((resolve) => {
@@ -72,29 +48,6 @@ class TaskBase {
 
     随机延时(startMs, endMs) {
         return this.延时(this.随机区间时间(startMs, endMs));
-    }
-
-    async 获取图片宽高(imagePath) {
-        try {
-            const image = await Jimp.Jimp.read(imagePath);
-            return {
-                width: image.bitmap.width,
-                height: image.bitmap.height
-            };
-        } catch (error) {
-            console.error('读取图片失败:', error);
-            throw error;
-        }
-    }
-
-    async 左键点击(result) {
-        if (result) {
-            await 屏幕控制(global.hwnd, '0', String(result.x / this.width), String(result.y / this.height))
-            await this.延时(1000)
-            await 屏幕控制(global.hwnd, '2', String(result.x / this.width), String(result.y / this.height))
-        } else {
-            console.log('左键点击坐标为空');
-        }
     }
 
     async 滑动(result1, result2) {
@@ -219,18 +172,7 @@ class TaskBase {
         }
     }
 
-    async ADB左键点击(result) {
-        if (result) {
-            // 按下
-            await 调用ADB(global.hwnd, `input motionevent DOWN ${result.x} ${result.y}`)
-            // 保持指定时长
-            await this.延时(this.随机区间时间(300, 800))
-            // 弹起
-            await 调用ADB(global.hwnd, `input motionevent UP ${result.x} ${result.y}`)
-        } else {
-            console.log('左键点击坐标为空');
-        }
-    }
+    ADB左键点击 = ADB左键点击
 
     async ADB滑动(result1, result2) {
         if (result1 && result2) {
@@ -354,16 +296,8 @@ class TaskBase {
         }
     }
 
-    async 百分之十随机用户操作() {
-        // 百分10的概率触发随机事件
-        if (Math.random() < 0.1) {
-            let x = this.随机区间位置(200, 800);
-            let y = this.随机区间位置(800, 1800);
-            console.log("🖱 触发随机事件 随机点击: (" + x + "," + y + ")");
-            await this.ADB左键点击({ x, y })
-            await this.延时(1000)
-        }
-    }
+    百分之十随机用户操作 = 百分之十随机用户操作
+
 }
 
 module.exports = TaskBase;

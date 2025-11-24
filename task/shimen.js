@@ -1,7 +1,5 @@
 const Mhxy = require('./index')
 const StateMachine = require('../tools/stateMachine2.js')
-const lihuo = require('../tools/lihuo')
-const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
 const 配置 = require('../resource/index.js')
 
 class Shimen extends Mhxy {
@@ -14,11 +12,7 @@ class Shimen extends Mhxy {
         //     console.log(screen);
         // }, 1000);
 
-
-
-        const sta = new StateMachine(() => {
-            // 操作 + 结果 + 下一状态
-        })
+        const sta = new StateMachine(() => { })
             .on('回到主界面', async () => {
                 // TODO 返回主页面操作
                 console.log('在主界面');
@@ -35,35 +29,29 @@ class Shimen extends Mhxy {
             })
             .on('打开师门界面', async () => {
                 // 点击活动界面师门参加按钮
-                const ponit = await 配置.活动界面师门任务.查找()
+                const ponit = await 配置.活动界面师门任务.查找().点击()
 
-                const ponit1 = await 配置.活动界面参加按钮.设置查找区域({ x1: ponit.x, y1: ponit.y, x2: ponit.x + 442, y2: ponit.y + 123 }).查找并点击()
+                await 配置.活动界面参加按钮.设置查找区域({ x1: ponit.x, y1: ponit.y, x2: ponit.x + 442, y2: ponit.y + 123 }).查找().点击().随机延时(1000, 3000)
 
-                await this.随机延时(1000, 3000)
 
-                // 出现师门界面
-                const point2 = await 配置.师门界面.查找()
-                if (point2) {
+                const isFind = await 配置.师门界面.查找().是否找到()
+                if (isFind) {
                     return '接取师门任务'
                 } else {
                     return '回到主界面'
                 }
             })
             .on('接取师门任务', async () => {
-
                 // 判断师门任务是否完成
-                const point = await 配置.师门界面继续任务按钮.查找并点击();
-                if (point) {
+                if (await 配置.师门界面继续任务按钮.查找().点击().是否找到()) {
                     return '做师门任务'
                 }
 
-                const point1 = await 配置.师门界面去完成按钮.查找并点击();
-                if (point1) {
+                if (await 配置.师门界面去完成按钮.查找().点击().是否找到()) {
                     return '做师门任务'
                 }
 
-                const point2 = await 配置.师门界面选择按钮.查找并点击();
-                if (point2) {
+                if (await 配置.师门界面选择按钮.查找().点击().是否找到()) {
                     return '做师门任务'
                 }
 
@@ -78,46 +66,22 @@ class Shimen extends Mhxy {
                     let ret = null;
 
                     if (i <= 0) {
-                        ret = await 配置.主界面_师门文字.查找()
-                        if (ret) {
-                            await this.ADB左键点击(this.随机坐标(ret.x, ret.y, ret.x + 336, ret.y + 121))
-                        }
+                        await 配置.主界面_师门文字.查找().偏移点击(0, 0, 336, 121)
                         i = 3
                     } else {
-                        ret = await 配置.跳过.查找()
-                        if (ret) {
-                            await this.ADB左键点击(this.随机坐标(300,300,2000, 980))
-                        }
-                        await 配置.使用.查找并点击()
-                        await 配置.上交.查找并点击()
-                        await 配置.对话_师门任务按钮.查找并点击()
-                        await 配置.主界面_师门集物.查找并点击()
-                        await 配置.弹框_购买.查找并点击()
-                        await 配置.摆摊弹框_购买.查找并点击()
-
-
-                        ret = await 配置.对话_师门寻趣按钮.查找()
-                        if (ret) {
-                            await this.ADB左键点击(this.随机坐标(ret.x, ret.y, ret.x + 415, ret.y + 68))
-                        }
-                        ret = await 配置.主界面_查看门派关系按钮.查找()
-                        if (ret) {
-                            await this.ADB左键点击(this.随机坐标(ret.x, ret.y - 102, ret.x + 358, ret.y - 102 + 65))
-                        }
+                        await 配置.跳过.查找().点击(300, 300, 2000, 980)
+                        await 配置.使用.查找().点击()
+                        await 配置.上交.查找().点击()
+                        await 配置.对话_师门任务按钮.查找().点击()
+                        await 配置.主界面_师门集物.查找().点击()
+                        await 配置.弹框_购买.查找().点击()
+                        await 配置.摆摊弹框_购买.查找().点击()
+                        await 配置.对话_师门寻趣按钮.查找().偏移点击(0, 0, 415, 68)
+                        await 配置.主界面_查看门派关系按钮.查找().偏移点击(0, -102, 358, - 102 + 65)
                     }
                     i--
 
                 })
-                    .on('点击查看门派关系按钮', async (lastState, currentState, getParams) => {
-                        // const ret = getParams()
-                       
-
-                        // console.log('点击师门集物', getParams());
-
-                    })
-                    .on('点击师门任务', (lastState, currentState, getParams) => {
-                        console.log('点击师门任务', getParams());
-                    })
                     .start(this.随机区间时间(1000, 3000))
 
             })
@@ -148,3 +112,10 @@ module.exports = Shimen
 
 
 
+// 点击文字
+
+// 遍历其他,然后进行任务操作,
+
+// 有进行任务操作,才继续点击文字,避免多次点击文字
+
+// 需要加入随机错误点击, 不能全是有效点击
