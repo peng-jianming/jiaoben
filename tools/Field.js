@@ -63,8 +63,6 @@ class Field {
         this.标识 = 标识;
         this.相似度 = 相似度 || 0.9
         this.查找区域 = 查找区域 || { x1: 0, y1: 0, x2: 0, y2: 0 }
-        this.x = 0
-        this.y = 0
     }
 
     async 查找() {
@@ -88,65 +86,63 @@ class Field {
         if (this.方式 == 'opencv找图') {
             const point = await findImage(url, this.图片路径, 30, this.相似度)
             if (point) {
-                // global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
-                this.x = this.查找区域.x1 + point.x
-                this.y = this.查找区域.y1 + point.y
+                global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+                return {
+                    x: this.查找区域.x1 + point.x,
+                    y: this.查找区域.y1 + point.y
+                }
+            } else {
+                global.changeProp('action', `未找到${this.标识}`)
+                return null
             }
         }
-
-        return this
     }
 
-    async 点击(x, y, w, h) {
-        // 有传入x,y,但是没有传入w,h,则精确点击x,y坐标
-        if (x && y && !w && !h) {
-            await ADB左键点击({ x, y })
+    async 查找并点击({ x, y, w, h, isOffset, startMs, endMs } = {}) {
+        const point = await this.查找();
+        if (point) {
+            // 是否是偏移点击
+            if (isOffset) {
+                // 根据自身this.x和this.y来进行x,y,后,加上w,h进行随机点击
+                // 只有x,y,就精确点击x,y坐标
+                if (x && y && !w && !h) {
+                    await ADB左键点击({ x: point.x + x, y: point.y + y })
+                }
+                // x,y,w,h都传入,则随机点击x,y,w,h范围内的坐标
+                if (x && y && w && h) {
+                    const result = 随机坐标(point.x + x, point.y + y, w, h)
+                    await ADB左键点击(result)
+                }
+            } else {
+                // 有传入x,y,但是没有传入w,h,则精确点击x,y坐标
+                if (x && y && !w && !h) {
+                    await ADB左键点击({ x, y })
+                }
+
+                // 有传入x,y,也有传入w,h,则随机点击x,y,w,h范围内的坐标
+                if (x && y && w && h) {
+                    const result = 随机坐标(x, y, w, h)
+                    await ADB左键点击(result)
+                }
+
+                // 没有传入x,y,w,h,则根据查询到的结果进行范围点击
+                if (!x && !y && !w && !h) {
+                    const { width, height } = await 获取图片宽高(this.图片路径)
+                    const result = 随机坐标(point.x, point.y, width, height)
+                    await ADB左键点击(result)
+                }
+            }
+            if (startMs && endMs && endMs >= startMs) {
+                await 随机延时(startMs, endMs)
+            }
+            return true
         }
-
-        // 有传入x,y,也有传入w,h,则随机点击x,y,w,h范围内的坐标
-        if (x && y && w && h) {
-            const result = 随机坐标(x, y, w, h)
-            await ADB左键点击(result)
-        }
-
-        // 没有传入x,y,w,h,则根据查询到的结果进行范围点击
-        if (!x && !y && !w && !h) {
-            const { width, height } = await 获取图片宽高(this.图片路径)
-            const result = 随机坐标(this.x, this.y, width, height)
-            await ADB左键点击(result)
-        }
-
-        return this
-    }
-
-    async 偏移点击(x, y, w, h) {
-        // 根据自身this.x和this.y来进行x,y,后,加上w,h进行随机点击
-
-        // 只有x,y,就精确点击x,y坐标
-        if (x && y && !w && !h) {
-            await ADB左键点击({ x: this.x + x, y: this.y + y })
-        }
-        // x,y,w,h都传入,则随机点击x,y,w,h范围内的坐标
-        if (x && y && w && h) {
-            const result = 随机坐标(this.x + x, this.y + y, w, h)
-            await ADB左键点击(result)
-        }
-
-        return this
+        return false
     }
 
     设置查找区域(查找区域) {
         this.查找区域 = 查找区域
         return this
-    }
-
-    async 随机延时(startMs, endMs) {
-        await 随机延时(startMs, endMs)
-        return this
-    }
-
-    是否找到() {
-        return this.x && this.y
     }
 }
 
