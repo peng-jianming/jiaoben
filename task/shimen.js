@@ -1,7 +1,6 @@
 const Mhxy = require('./index')
 const StateMachine = require('../tools/stateMachine2.js')
 const 配置 = require('../resource/index.js')
-const { 随机区间时间, 随机延时 } = require('../tools/tools.js')
 
 class Shimen extends Mhxy {
     async start() {
@@ -21,7 +20,7 @@ class Shimen extends Mhxy {
                 return '打开活动界面'
             })
             .on('打开活动界面', async () => {
- 
+
                 await 配置.主界面活动按钮.查找并点击({
                     startMs: 1000,
                     endMs: 3000

@@ -1,3 +1,9 @@
+// 透明图制作, 对比源图片和结果图片, 如果结果图片的像素点和源图片的像素点不同,则设置为透明,已经设为透明的像素点,则不处理,保持透明
+// imagePath 需要处理的源图片
+// resultPath 处理后的图片, 如果文件不存在,则创建文件,如果存在,就作为上次的结果继续处理
+// CROP_CONFIG 源图片裁剪配置,
+// tolerance 处理时的容差值
+
 const Jimp = require('jimp');
 const fs = require('fs');
 const path = require('path');
@@ -5,15 +11,14 @@ const path = require('path');
 // 配置路径
 // 源图片路径（全屏截图）
 const imagePath = path.join(__dirname, 'resource/cache/9a8de478.png');
-const resultPath = path.join(__dirname, 'resource/cache/aaa_processed.png');
-
-// 裁剪配置
+const resultPath = path.join(__dirname, 'resource/cache/toumingtu.png');
+// 源图片裁剪配置,
 const CROP_CONFIG = {
-    enabled: true,
-    x: 1959,
-    y: 272,
-    w: 73,
-    h: 41
+    enabled: true, // 是否启用裁剪,让配置生效
+    x: 1959, // 裁剪的x坐标
+    y: 272, // 裁剪的y坐标
+    w: 73, // 裁剪的宽度
+    h: 41 // 裁剪的高度
 };
 
 let baseImage = null;
@@ -38,20 +43,20 @@ async function processImage(tolerance = 0) {
             // 文件未更新，跳过
             return;
         }
-        
+
         // 等待文件写入完成（简单的防抖，防止读取到写入一半的文件）
         // 在实际高频写入场景可能需要更复杂的锁机制，这里简单假设读取时文件已就绪
-        
+
         let currentImage = await Jimp.Jimp.read(imagePath);
-        
+
         // 如果启用了裁剪，先对图片进行裁剪
         if (CROP_CONFIG.enabled) {
             // console.log(`正在裁剪: x=${CROP_CONFIG.x}, y=${CROP_CONFIG.y}, w=${CROP_CONFIG.w}, h=${CROP_CONFIG.h}`);
-            currentImage.crop({ 
-                x: CROP_CONFIG.x, 
-                y: CROP_CONFIG.y, 
-                w: CROP_CONFIG.w, 
-                h: CROP_CONFIG.h 
+            currentImage.crop({
+                x: CROP_CONFIG.x,
+                y: CROP_CONFIG.y,
+                w: CROP_CONFIG.w,
+                h: CROP_CONFIG.h
             });
         }
 
@@ -79,7 +84,7 @@ async function processImage(tolerance = 0) {
 
             let diffCount = 0;
             // 遍历所有像素进行对比
-            baseImage.scan(0, 0, baseImage.bitmap.width, baseImage.bitmap.height, function(x, y, idx) {
+            baseImage.scan(0, 0, baseImage.bitmap.width, baseImage.bitmap.height, function (x, y, idx) {
                 // 如果基准图片这个点已经是透明的，就不用比了
                 if (this.bitmap.data[idx + 3] === 0) return;
 
@@ -101,7 +106,7 @@ async function processImage(tolerance = 0) {
 
                 if (rDiff > tolerance || gDiff > tolerance || bDiff > tolerance || aDiff > tolerance) {
                     // 不一样，设置为透明
-                    this.bitmap.data[idx + 3] = 0; 
+                    this.bitmap.data[idx + 3] = 0;
                     // 颜色也可以清空，不过alpha设为0也就看不见了
                     this.bitmap.data[idx + 0] = 0;
                     this.bitmap.data[idx + 1] = 0;
