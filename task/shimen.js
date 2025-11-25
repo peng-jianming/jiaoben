@@ -22,7 +22,14 @@ class Shimen extends Mhxy {
                 return '打开活动界面'
             })
             .on('打开活动界面', async () => {
-                const result = await this.打开活动界面()
+
+                await 配置.主界面活动按钮.查找并点击({
+                    startMs: 1000,
+                    endMs: 3000
+                })
+
+                const result = await 配置.活动界面.查找()
+
                 if (result) {
                     return '打开师门界面'
                 } else {
@@ -38,8 +45,8 @@ class Shimen extends Mhxy {
                     endMs: 3000
                 })
 
-
                 const isFind = await 配置.师门界面.查找()
+                
                 if (isFind) {
                     return '接取师门任务'
                 } else {
