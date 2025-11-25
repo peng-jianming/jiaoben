@@ -27,7 +27,7 @@ class Field {
                     y: this.查找区域.y + point.y
                 }
             } else {
-                global.changeProp('action', `未找到${this.标识}`)
+                // global.changeProp('action', `未找到${this.标识}`)
                 return null
             }
         }
@@ -35,16 +35,18 @@ class Field {
 
     async 查找并点击({ x, y, w, h, isOffset, startMs, endMs } = {}) {
         const point = await this.查找();
+        console.log(point,x, y, w, h, isOffset, "11111111", this.标识);
         if (point) {
             // 是否是偏移点击
             if (isOffset) {
                 // 根据自身this.x和this.y来进行x,y,后,加上w,h进行随机点击
                 // 只有x,y,就精确点击x,y坐标
-                if (x && y && !w && !h) {
+                if (!w && !h) {
                     await ADB左键点击({ x: point.x + x, y: point.y + y })
                 }
                 // x,y,w,h都传入,则随机点击x,y,w,h范围内的坐标
-                if (x && y && w && h) {
+                if (w && h) {
+                    console.log(point,x, y, w, h, isOffset, "222222", this.标识);
                     const result = 随机坐标(point.x + x, point.y + y, w, h)
                     await ADB左键点击(result)
                 }

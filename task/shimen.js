@@ -23,7 +23,7 @@ class Shimen extends Mhxy {
 
                 await 配置.主界面活动按钮.查找并点击({
                     startMs: 1000,
-                    endMs: 3000
+                    endMs: 1500
                 })
 
                 const result = await 配置.活动界面.查找()
@@ -39,7 +39,7 @@ class Shimen extends Mhxy {
 
                 await 配置.活动界面参加按钮.设置查找区域({ x: ponit.x, y: ponit.y, width: 442, height: 123 }).查找并点击({
                     startMs: 1000,
-                    endMs: 3000
+                    endMs: 1500
                 })
 
                 const isFind = await 配置.师门界面.查找()
@@ -89,23 +89,22 @@ class Shimen extends Mhxy {
                         })
                         await 配置.使用.查找并点击()
                         await 配置.上交.查找并点击()
-                        await 配置.对话_师门任务按钮.查找并点击()
                         await 配置.主界面_师门集物.查找并点击()
                         await 配置.弹框_购买.查找并点击()
                         await 配置.摆摊弹框_购买.查找并点击()
-                        await 配置.对话_师门寻趣按钮.查找并点击({
+
+                        await 配置.对话选项框.查找并点击({
                             isOffset: true,
-                            x: 0,
-                            y: 0,
-                            w: 415,
-                            h: 68
+                            x: 40,
+                            y: 120,
+                            w: 400,
+                            h: 60
                         })
-                        await 配置.主界面_查看门派关系按钮.查找并点击({
-                            isOffset: true,
-                            x: 0,
-                            y: -102,
-                            w: 358,
-                            h: - 102 + 65
+                        await 配置.对话说话框.查找并点击({
+                            x: 300,
+                            y: 300,
+                            w: 1800,
+                            h: 600
                         })
                     }
                     i--

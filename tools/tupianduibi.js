@@ -1,5 +1,5 @@
 const Jimp = require('jimp');
-const cv = require('./tools/opencv.js');
+const cv = require('./opencv.js');
 const path = require('path');
 
 /**
@@ -105,12 +105,12 @@ async function findImage(largeImagePath, smallImagePath, tolerance, similarity =
 
         const matchRate = totalPixels > 0 ? matchedPixels / totalPixels : 0;
         // console.log(`Match rate: ${matchRate.toFixed(4)} (${matchedPixels}/${totalPixels})`);
-        // console.log('matchRate', matchRate);
+        console.log('matchRate', matchRate);
         
         if (matchRate >= similarity) {
             return { x: startX, y: startY };
         } else {
-            // console.log(`Found candidate at ${startX},${startY} but similarity ${matchRate.toFixed(4)} < ${similarity}`);
+            console.log(`Found candidate at ${startX},${startY} but similarity ${matchRate.toFixed(4)} < ${similarity}`);
             return null;
         }
 
@@ -124,8 +124,8 @@ module.exports = { findImage };
 
 // 测试代码 (如果直接运行此文件)
 if (require.main === module) {
-    const largePath = path.join(__dirname, 'resource/cache/aaa.png');
-    const smallPath = path.join(__dirname, 'resource/cache/shimenxunqu.png');
+    const largePath = path.join(__dirname, '../resource/cache/aaa.png');
+    const smallPath = path.join(__dirname, '../resource/cache/ddd.bmp');
     const tolerance = 30;
     const similarity = 0.8;
 

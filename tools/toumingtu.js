@@ -10,15 +10,15 @@ const path = require('path');
 
 // 配置路径
 // 源图片路径（全屏截图）
-const imagePath = path.join(__dirname, 'resource/cache/9a8de478.png');
-const resultPath = path.join(__dirname, 'resource/cache/toumingtu.png');
+const imagePath = path.join(__dirname, '../resource/cache/111.png');
+const resultPath = path.join(__dirname, '../resource/cache/toumingtu.png');
 // 源图片裁剪配置,
 const CROP_CONFIG = {
     enabled: true, // 是否启用裁剪,让配置生效
-    x: 1959, // 裁剪的x坐标
-    y: 272, // 裁剪的y坐标
-    w: 73, // 裁剪的宽度
-    h: 41 // 裁剪的高度
+    x: 118,// 裁剪的x坐标
+    y: 1028, // 裁剪的y坐标
+    w: 94, // 裁剪的宽度
+    h: 31 // 裁剪的高度
 };
 
 let baseImage = null;
@@ -71,8 +71,11 @@ async function processImage(tolerance = 0) {
                 baseImage = currentImage;
                 console.log('已初始化基准图片');
                 await baseImage.write(resultPath);
+                return;
             }
-        } else {
+        }
+
+        {
             // 确保尺寸一致，如果不一致可能需要重置或调整，这里假设尺寸不变
             if (baseImage.width !== currentImage.width || baseImage.height !== currentImage.height) {
                 console.log('图片尺寸发生变化，重置基准图片');
@@ -132,7 +135,7 @@ async function processImage(tolerance = 0) {
 
 // 每秒执行一次
 console.log('开始监控图片变化...');
-const tolerance = 30; // 设置容差值
+const tolerance = 10; // 设置容差值
 setInterval(() => processImage(tolerance), 1000);
 
 

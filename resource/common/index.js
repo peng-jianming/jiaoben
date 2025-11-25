@@ -31,11 +31,25 @@ const 活动界面 = new Field({
     图片路径: path.resolve(__dirname, `huodongjiemian.png`)
 });
 
+const 对话选项框 = new Field({
+    标识: '对话选项框',
+    方式: 'opencv找图',
+    图片路径: path.resolve(__dirname, `duihuakuang.png`)
+});
+
+const 对话说话框 = new Field({
+    标识: '对话说话框',
+    方式: 'opencv找图',
+    图片路径: path.resolve(__dirname, `shuohuakuang.png`)
+});
+
 module.exports = {
     跳过,
     使用,
     上交,
     主界面活动按钮,
-    活动界面
+    活动界面,
+    对话选项框,
+    对话说话框
 };
 
