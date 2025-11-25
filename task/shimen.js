@@ -1,6 +1,7 @@
 const Mhxy = require('./index')
 const StateMachine = require('../tools/stateMachine2.js')
 const 配置 = require('../resource/index.js')
+const { 随机区间时间, 随机延时 } = require('../tools/tools.js')
 
 class Shimen extends Mhxy {
     async start() {
@@ -16,11 +17,9 @@ class Shimen extends Mhxy {
 
         const sta = new StateMachine(() => { })
             .on('回到主界面', async () => {
-                // TODO 返回主页面操作
-                console.log('在主界面');
-                await this.随机延时(1000, 3000)
+                this.回到主界面();
                 return '打开活动界面'
-            })
+            },5000)
             .on('打开活动界面', async () => {
 
                 await 配置.主界面活动按钮.查找并点击({
@@ -40,13 +39,13 @@ class Shimen extends Mhxy {
                 // 点击活动界面师门参加按钮
                 const ponit = await 配置.活动界面师门任务.查找()
 
-                await 配置.活动界面参加按钮.设置查找区域({ x1: ponit.x, y1: ponit.y, x2: ponit.x + 442, y2: ponit.y + 123 }).查找并点击({
+                await 配置.活动界面参加按钮.设置查找区域({ x: ponit.x, y: ponit.y, width: 442, height: 123 }).查找并点击({
                     startMs: 1000,
                     endMs: 3000
                 })
 
                 const isFind = await 配置.师门界面.查找()
-                
+
                 if (isFind) {
                     return '接取师门任务'
                 } else {
@@ -114,9 +113,12 @@ class Shimen extends Mhxy {
                     i--
                 }
             })
+            .onTimeout(async () => {
+                console.log('超时啦~~~~');
+                
+            })
 
-        sta.currentState = '回到主界面'
-        await sta.start(this.随机区间时间(1000, 3000))
+        await sta.start('回到主界面')
 
     }
 }

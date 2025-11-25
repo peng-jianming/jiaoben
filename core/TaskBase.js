@@ -1,6 +1,5 @@
-const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
-const Jimp = require('jimp')
-const { 随机区间时间, ADB左键点击, 百分之十随机用户操作 } = require('../tools/tools.js')
+const { 调用ADB } = require('../touping.js')
+const {  ADB左键点击 } = require('../tools/tools.js')
 class TaskBase {
     flag = true
 
@@ -10,44 +9,6 @@ class TaskBase {
 
     async start() {
         throw new Error('子类必须实现start()方法');
-    }
-
-    随机区间时间 = 随机区间时间
-
-    延时(time) {
-        return new Promise((resolve) => {
-            if (!this.flag) {
-                resolve();
-                return;
-            }
-
-            const startTime = Date.now();
-            const interval = 50; // 每50ms检查一次flag
-
-            const checkInterval = setInterval(() => {
-                if (!this.flag) {
-                    clearInterval(checkInterval);
-                    clearTimeout(timeout);
-                    resolve();
-                    return;
-                }
-
-                // 如果已经过了指定时间，也结束
-                if (Date.now() - startTime >= time) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, interval);
-
-            const timeout = setTimeout(() => {
-                clearInterval(checkInterval);
-                resolve();
-            }, time);
-        });
-    }
-
-    随机延时(startMs, endMs) {
-        return this.延时(this.随机区间时间(startMs, endMs));
     }
 
     async 滑动(result1, result2) {
@@ -172,8 +133,6 @@ class TaskBase {
         }
     }
 
-    ADB左键点击 = ADB左键点击
-
     async ADB滑动(result1, result2) {
         if (result1 && result2) {
             function 获取贝塞尔曲线(qx, qy, zx, zy) {
@@ -295,8 +254,6 @@ class TaskBase {
             console.log('左键点击坐标为空');
         }
     }
-
-    百分之十随机用户操作 = 百分之十随机用户操作
 
 }
 

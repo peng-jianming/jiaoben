@@ -1,95 +1,30 @@
 const Jimp = require('jimp')
-const { getScreen, 屏幕控制, 调用ADB } = require('../touping.js')
-const lihuo = require('./lihuo')
-const { findImage } = require('../ccc')
-
-const 获取图片宽高 = async (imagePath) => {
-    try {
-        const image = await Jimp.Jimp.read(imagePath);
-        return {
-            width: image.bitmap.width,
-            height: image.bitmap.height
-        };
-    } catch (error) {
-        console.error('读取图片失败:', error);
-        throw error;
-    }
-}
-
-const 随机区间位置 = (start, end) => {
-    return Math.floor(Math.random() * (end - start)) + start;
-}
-
-const 随机区间时间 = (startMs, endMs) => {
-    if (startMs > endMs) {
-        [startMs, endMs] = [endMs, startMs];
-    }
-    // 生成包含两端点的随机整数
-    return Math.floor(Math.random() * (endMs - startMs + 1)) + startMs;
-}
-
-const 随机坐标 = (x1, y1, width, height) => {
-    return {
-        x: 随机区间位置(x1, x1 + width),
-        y: 随机区间位置(y1, y1 + height)
-    }
-}
-
-const 延时 = (time) => {
-    return new Promise((resolve) => setTimeout(resolve, time));
-}
-
-const 随机延时 = (startMs, endMs) => {
-    return 延时(随机区间时间(startMs, endMs));
-}
-
-const ADB左键点击 = async (result) => {
-    if (result) {
-        // 按下
-        await 调用ADB(global.hwnd, `input motionevent DOWN ${result.x} ${result.y}`)
-
-        await 随机延时(100, 500)
-        // 弹起
-        await 调用ADB(global.hwnd, `input motionevent UP ${result.x} ${result.y}`)
-    } else {
-        console.log('左键点击坐标为空');
-    }
-}
-
+const { getScreen } = require('../touping.js')
+const { opencv找图, 获取图片宽高, 随机坐标, 随机延时, ADB左键点击 } = require('./tools')
 class Field {
     constructor({ 方式, 图片路径, 标识, 相似度, 查找区域 }) {
         this.方式 = 方式;
         this.图片路径 = 图片路径;
         this.标识 = 标识;
         this.相似度 = 相似度 || 0.9
-        this.查找区域 = 查找区域 || { x1: 0, y1: 0, x2: 0, y2: 0 }
+        this.查找区域 = 查找区域 || { x: 0, y: 0, width: 0, height: 0 }
     }
 
     async 查找() {
         let url = await getScreen(global.hwnd)
 
         // 如果区域有效，则裁剪图片并覆盖原图
-        if (this.查找区域 && this.查找区域.x1 >= 0 && this.查找区域.y1 >= 0 && this.查找区域.x2 > this.查找区域.x1 && this.查找区域.y2 > this.查找区域.y1) {
-            try {
-                const image = await Jimp.Jimp.read(url);
-                const x = Math.floor(this.查找区域.x1);
-                const y = Math.floor(this.查找区域.y1);
-                const width = Math.floor(this.查找区域.x2 - this.查找区域.x1);
-                const height = Math.floor(this.查找区域.y2 - this.查找区域.y1);
-                const cropped = image.clone().crop({ x, y, w: width, h: height });
-                await cropped.write(url);
-            } catch (error) {
-                console.error('裁剪图片失败:', error);
-            }
+        if (this.查找区域 && this.查找区域.width && this.查找区域.height) {
+            await 裁剪图片(url, this.查找区域)
         }
 
         if (this.方式 == 'opencv找图') {
-            const point = await findImage(url, this.图片路径, 30, this.相似度)
+            const point = await opencv找图(url, this.图片路径, 30, this.相似度)
             if (point) {
                 global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
                 return {
-                    x: this.查找区域.x1 + point.x,
-                    y: this.查找区域.y1 + point.y
+                    x: this.查找区域.x + point.x,
+                    y: this.查找区域.y + point.y
                 }
             } else {
                 global.changeProp('action', `未找到${this.标识}`)

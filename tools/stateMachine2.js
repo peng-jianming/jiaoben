@@ -172,7 +172,7 @@ module.exports = class StateMachine {
         return this;
     }
 
-    start(tick = 200) {
+    start(initState ,tick = (Math.floor(Math.random() * 2001) + 1000)) {
         // 如果已经有 Promise 在等待，直接返回它
         if (this._startPromise) {
             return this._startPromise;
@@ -182,7 +182,7 @@ module.exports = class StateMachine {
         this._startPromise = new Promise((resolve) => {
             this._resolvePromise = resolve;
         });
-
+        if (initState) this.currentState = initState
         this.lastState = undefined;
         this.mainLoop = new PromiseInterval(tick);
         this.mainLoop.start(
