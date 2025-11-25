@@ -386,7 +386,7 @@
             downloadBtn.disabled = false;
             
             // 每秒执行一次
-            intervalId = setInterval(processPixelChanges, 1000);
+            intervalId = setInterval(processPixelChanges, 500);
             status.textContent = '处理已开始，每秒重新读取图片并检查像素变化（读取失败时会自动忽略并继续）...';
             
             // 立即执行一次

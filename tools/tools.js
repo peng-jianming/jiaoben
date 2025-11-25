@@ -1,11 +1,109 @@
 const Jimp = require('jimp')
 const { 调用ADB } = require('../touping.js')
 const cv = require('./opencv.js');
+const fs = require('fs');
+const path = require('path');
+
+// 文件读取锁管理器，防止并发读取同一文件导致流冲突
+const fileReadLocks = new Map();
+
+/**
+ * 安全读取图片文件，避免并发冲突
+ * @param {string} imagePath 图片路径
+ * @param {number} maxRetries 最大重试次数
+ * @param {number} retryDelay 重试延迟（毫秒）
+ * @returns {Promise<Jimp>}
+ */
+async function safeReadImage(imagePath, maxRetries = 3, retryDelay = 100) {
+    // 获取或创建文件锁队列
+    if (!fileReadLocks.has(imagePath)) {
+        fileReadLocks.set(imagePath, Promise.resolve());
+    }
+    
+    // 等待之前的操作完成
+    const previousLock = fileReadLocks.get(imagePath);
+    await previousLock;
+    
+    // 创建新的锁 Promise
+    let resolveLock;
+    const lockPromise = new Promise(resolve => {
+        resolveLock = resolve;
+    });
+    fileReadLocks.set(imagePath, lockPromise);
+    
+    try {
+        // 先复制文件到临时位置，避免并发读取冲突
+        const tempPath = imagePath + '.tmp.' + Date.now() + '.' + Math.random().toString(36).substr(2, 9);
+        
+        let retries = 0;
+        while (retries < maxRetries) {
+            try {
+                // 复制文件到临时位置
+                fs.copyFileSync(imagePath, tempPath);
+                
+                // 从临时文件读取
+                const image = await Jimp.Jimp.read(tempPath);
+                
+                // 清理临时文件
+                try {
+                    if (fs.existsSync(tempPath)) {
+                        fs.unlinkSync(tempPath);
+                    }
+                } catch (e) {
+                    // 忽略清理错误
+                }
+                
+                return image;
+            } catch (error) {
+                retries++;
+                if (retries >= maxRetries) {
+                    // 如果临时文件读取失败，尝试直接读取原文件（作为最后手段）
+                    try {
+                        const image = await Jimp.Jimp.read(imagePath);
+                        return image;
+                    } catch (directError) {
+                        // 清理临时文件
+                        try {
+                            if (fs.existsSync(tempPath)) {
+                                fs.unlinkSync(tempPath);
+                            }
+                        } catch (e) {
+                            // 忽略清理错误
+                        }
+                        throw directError;
+                    }
+                }
+                // 清理失败的临时文件
+                try {
+                    if (fs.existsSync(tempPath)) {
+                        fs.unlinkSync(tempPath);
+                    }
+                } catch (e) {
+                    // 忽略清理错误
+                }
+                // 等待后重试（指数退避）
+                await new Promise(resolve => setTimeout(resolve, retryDelay * Math.pow(2, retries - 1)));
+            }
+        }
+    } finally {
+        // 释放锁
+        resolveLock();
+        // 如果这是最后一个操作，清理锁
+        if (fileReadLocks.get(imagePath) === lockPromise) {
+            // 延迟清理，给其他可能正在等待的操作时间
+            setTimeout(() => {
+                if (fileReadLocks.get(imagePath) === lockPromise) {
+                    fileReadLocks.delete(imagePath);
+                }
+            }, 1000);
+        }
+    }
+}
 
 
 const 获取图片宽高 = async (imagePath) => {
     try {
-        const image = await Jimp.Jimp.read(imagePath);
+        const image = await safeReadImage(imagePath);
         return {
             width: image.bitmap.width,
             height: image.bitmap.height
@@ -77,13 +175,13 @@ const 百分之十随机用户操作 = async () => {
 async function opencv找图(大图路径, 小图路径, 容差 = 0, 相似度 = 0.9) {
     try {
         // 1. 加载图片
-        if (!require('fs').existsSync(大图路径) || !require('fs').existsSync(小图路径)) {
+        if (!fs.existsSync(大图路径) || !fs.existsSync(小图路径)) {
             console.error("Image files not found.");
             return null;
         }
 
-        const largeJimp = await Jimp.Jimp.read(大图路径);
-        const smallJimp = await Jimp.Jimp.read(小图路径);
+        const largeJimp = await safeReadImage(大图路径);
+        const smallJimp = await safeReadImage(小图路径);
 
         // 2. 转换为 OpenCV Mat (RGBA)
         const largeMat = new cv.Mat(largeJimp.bitmap.height, largeJimp.bitmap.width, cv.CV_8UC4);
@@ -187,7 +285,8 @@ async function opencv找图(大图路径, 小图路径, 容差 = 0, 相似度 = 
 
 const 裁剪图片 = async (裁剪图片路径, 裁剪区域) => {
     try {
-        const image = await Jimp.Jimp.read(裁剪图片路径);
+        // 使用安全读取避免并发冲突
+        const image = await safeReadImage(裁剪图片路径);
         const x = Math.floor(裁剪区域.x);
         const y = Math.floor(裁剪区域.y);
         const width = Math.floor(裁剪区域.width);
@@ -196,6 +295,7 @@ const 裁剪图片 = async (裁剪图片路径, 裁剪区域) => {
         await cropped.write(裁剪图片路径);
     } catch (error) {
         console.error('裁剪图片失败:', error);
+        throw error;
     }
 }
 

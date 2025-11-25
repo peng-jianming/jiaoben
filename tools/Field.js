@@ -1,6 +1,6 @@
 const Jimp = require('jimp')
 const { getScreen } = require('../touping.js')
-const { opencv找图, 获取图片宽高, 随机坐标, 随机延时, ADB左键点击 } = require('./tools')
+const { opencv找图, 获取图片宽高, 随机坐标, 随机延时, ADB左键点击, 裁剪图片 } = require('./tools')
 class Field {
     constructor({ 方式, 图片路径, 标识, 相似度, 查找区域 }) {
         this.方式 = 方式;
