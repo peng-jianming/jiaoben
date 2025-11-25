@@ -12,6 +12,8 @@ class Shimen extends Mhxy {
         //     console.log(screen);
         // }, 1000);
 
+
+
         const sta = new StateMachine(() => { })
             .on('回到主界面', async () => {
                 // TODO 返回主页面操作
@@ -63,11 +65,8 @@ class Shimen extends Mhxy {
 
             })
             .on('做师门任务', async () => {
-
                 let i = 0
-                new StateMachine(async (setParams) => {
-                    let ret = null;
-
+                while (true) {
                     if (i <= 0) {
                         await 配置.主界面_师门文字.查找并点击({
                             isOffset: true,
@@ -106,10 +105,7 @@ class Shimen extends Mhxy {
                         })
                     }
                     i--
-
-                })
-                    .start(this.随机区间时间(1000, 3000))
-
+                }
             })
 
         sta.currentState = '回到主界面'

@@ -1,7 +1,7 @@
 const taskRegistry = require('./task/TaskRegistry');
 
 let currentTask = null
-let currentHwnd = null
+global.hwnd = null
 let taskLoop = null // 任务循环定时器
 
 /**
@@ -10,7 +10,7 @@ let taskLoop = null // 任务循环定时器
 function updateData(data) {
     process.send({
         ...data,
-        hwnd: currentHwnd
+        hwnd: global.hwnd
     });
 }
 
@@ -27,11 +27,12 @@ function createStatusUpdater() {
 process.on('message', async (message) => {
     console.log('收到来自主进程的信息:', message);
 
-    currentHwnd = message.hwnd;
+    global.hwnd = message.hwnd;
 
     try {
         switch (message.type) {
             case 'start':
+                global.changeProp = createStatusUpdater();
                 await handleStart(message);
                 break;
             case 'stop':
@@ -54,8 +55,6 @@ process.on('message', async (message) => {
  */
 async function handleStart(message) {
     const { taskList, options = {} } = message;
-    global.hwnd = message.hwnd;
-    global.changeProp = createStatusUpdater();
 
     // 停止之前的任务循环
     if (taskLoop) {
@@ -196,11 +195,11 @@ function handleReload(message) {
         // 重新加载指定任务
         const success = taskRegistry.reloadTask(taskName);
         if (success) {
-            console.log(`[Worker ${currentHwnd}] 任务 ${taskName} 已重新加载`);
+            console.log(`[Worker ${global.hwnd}] 任务 ${taskName} 已重新加载`);
         }
     } else {
         // 重新加载所有任务
         const count = taskRegistry.reloadAllTasks();
-        console.log(`[Worker ${currentHwnd}] 已重新加载 ${count} 个任务`);
+        console.log(`[Worker ${global.hwnd}] 已重新加载 ${count} 个任务`);
     }
 }
