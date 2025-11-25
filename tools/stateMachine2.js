@@ -70,11 +70,8 @@ module.exports = class StateMachine {
         this.currentState = undefined;
         this.states = {};
         this.runners = [];
-        this.timeoutChecker = [];
         this.mainLoop = undefined;
-        this.onTickCallback = undefined;
         this.onErrorCallback = undefined;
-        this.onTimeoutCallback = undefined;
         this._resolvePromise = undefined;
         this._startPromise = undefined;
         this.params = {}
@@ -84,40 +81,6 @@ module.exports = class StateMachine {
         this.stop();
         if (this.onErrorCallback) this.onErrorCallback(e);
         else throw e;
-    }
-
-    _timeoutHandle(state) {
-        // this.stop();
-        if (this.onTimeoutCallback) this.onTimeoutCallback(state);
-        else throw new Error(`state: ${state} timeout`);
-    }
-
-    _startTimeoutChecker(state, ms) {
-        if (ms) {
-            this.timeoutChecker.push(setTimeout(() => this._timeoutHandle(state), ms));
-        }
-    }
-
-    _stopTimeoutChecker() {
-        this.timeoutChecker.forEach(clearTimeout);
-        this.timeoutChecker = [];
-    }
-
-    _startRunner(stateMachineOrSubscriber, tick) {
-        if (stateMachineOrSubscriber instanceof StateMachine) {
-            try {
-                stateMachineOrSubscriber.onError((e) => this._errorHandle(e));
-            } catch (e) { }
-            try {
-                stateMachineOrSubscriber.onTimeout((state) => this.onTimeout(state));
-            } catch (e) { }
-            stateMachineOrSubscriber.start(tick);
-            this.runners.push(stateMachineOrSubscriber);
-        } else {
-            const runner = new PromiseInterval(tick);
-            runner.start(stateMachineOrSubscriber, (e) => this._errorHandle(e));
-            this.runners.push(runner);
-        }
     }
 
     _stopRunner() {
@@ -139,24 +102,13 @@ module.exports = class StateMachine {
 
         if (this.states[this.currentState]) {
             this.lastState = this.currentState;
-            this._stopTimeoutChecker();
-            for (const [subscriber, timeout] of this.states[this.currentState]) {
-                this._startTimeoutChecker(this.currentState, timeout);
-                const result = await subscriber(this.lastState, this.currentState, this.getParams.bind(this));
-                this.currentState = result || ''
-            }
+            const result = await this.states[this.currentState](this.lastState, this.currentState, this.getParams.bind(this));
+            this.currentState = result || ''
         }
     }
-    // 默认timeout:0,没有超时限制,
-    on(state, stateMachineOrSubscriber, timeout = 0) {
-        if (!this.states[state]) this.states[state] = [];
-        this.states[state].push([stateMachineOrSubscriber, timeout]);
-        return this;
-    }
 
-    onTick(callback) {
-        if (this.onTickCallback) throw new Error('Only one TickHandler allowed');
-        this.onTickCallback = callback;
+    on(state, stateMachineOrSubscriber) {
+        this.states[state] = stateMachineOrSubscriber;
         return this;
     }
 
@@ -166,13 +118,7 @@ module.exports = class StateMachine {
         return this;
     }
 
-    onTimeout(callback) {
-        if (this.onTimeoutCallback) throw new Error('Only one TimeoutHandler allowed');
-        this.onTimeoutCallback = callback;
-        return this;
-    }
-
-    start(initState ,tick = (Math.floor(Math.random() * 2001) + 1000)) {
+    start(initState, tick = (Math.floor(Math.random() * 2001) + 1000)) {
         // 如果已经有 Promise 在等待，直接返回它
         if (this._startPromise) {
             return this._startPromise;
@@ -198,7 +144,6 @@ module.exports = class StateMachine {
     stop() {
         if (this.mainLoop) this.mainLoop.stop();
         this._stopRunner();
-        this._stopTimeoutChecker();
 
         // 如果有等待的 Promise，resolve 它
         if (this._resolvePromise) {
@@ -210,67 +155,3 @@ module.exports = class StateMachine {
 }
 
 
-
-// 执行任务的开始，不管目前处于哪一步，都是从头开始
-// 出任何问题了，直接从头开始
-
-
-// 以轮询为主,轮询有返回的状态,不管注册函数里面是否有设置状态,都根据轮询返回的状态为主
-// 轮询无返回状态,注册函数里面设置了状态,那么就根据注册函数里面设置的状态跑
-// 轮询无返回状态,注册函数里面也没有设置状态,那么就会一直轮询,导致脚本卡住,函数里面有没有注册状态的情况,需要有超时时间
-// const otherStateMachine = new StateMachine(() => {
-//     console.log('111111111', otherStateMachine.currentState);
-//     // return otherStateMachine.currentState;
-//     // return '进入主页面'
-// })
-//     .on('进入主页面', async () => {
-//         console.log('点击活动按钮')
-//         // otherStateMachine.currentState = '进入活动界面'
-//         // await this.延时(5,0)
-//     })
-//     .on('进入活动界面', () => {
-//         console.log('点击师门按钮')
-//         otherStateMachine.currentState = '进入师门界面'
-//     })
-//     .on('进入师门界面', () => {
-//         console.log('点击开始任务')
-//         // otherStateMachine.currentState = '进入师门界面'
-//     })
-//     .on('做师门任务', async () => {
-//         console.log('正在做师门任务')
-//         const aaa = new StateMachine(() => {
-//             // 记录标记()
-//             // if (师门召唤兽购买上交) {
-//             //     return '师门召唤兽购买上交'
-//             // }
-//             // if (找到右侧师门) {
-//             //     return '找到右侧师门'
-//             // }
-//             // if (不动检测()) {
-//             //     return '卡住了'
-//             // }
-//             return '卡住了'
-//         })
-//             .on('找到右侧师门', async () => {
-//                 console.log('点击右侧师门');
-//             })
-//             .on('师门召唤兽购买上交', async () => {
-//                 console.log('购买召唤兽');
-//             })
-//             .on('卡住了', async () => {
-//                 aaa.stop()
-//                 console.log('卡住了');
-//                 otherStateMachine.currentState = '进入主页面'
-//             })
-
-
-//         aaa.start(1000)
-
-//     })
-//     .onTimeout((state) => {
-//         console.log(state, '超时了')
-//         otherStateMachine.currentState = '进入主页面'
-//     })
-
-// otherStateMachine.start(1000)
-// otherStateMachine.currentState = '进入主页面'

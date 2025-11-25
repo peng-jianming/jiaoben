@@ -10,6 +10,7 @@ class Mhxy extends TaskBase {
             await 配置.关闭1.查找并点击()
 
             await 随机延时(500, 1500)
+            return
         }
     }
 }

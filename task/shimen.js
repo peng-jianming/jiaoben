@@ -19,16 +19,15 @@ class Shimen extends Mhxy {
             .on('回到主界面', async () => {
                 this.回到主界面();
                 return '打开活动界面'
-            },5000)
+            })
             .on('打开活动界面', async () => {
-
+ 
                 await 配置.主界面活动按钮.查找并点击({
                     startMs: 1000,
                     endMs: 3000
                 })
 
                 const result = await 配置.活动界面.查找()
-
                 if (result) {
                     return '打开师门界面'
                 } else {
@@ -113,12 +112,11 @@ class Shimen extends Mhxy {
                     i--
                 }
             })
-            .onTimeout(async () => {
-                console.log('超时啦~~~~');
-                
-            })
 
         await sta.start('回到主界面')
+
+        console.log('1111111111111');
+
 
     }
 }
