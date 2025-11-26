@@ -4,6 +4,7 @@ const 配置 = require('../resource/index.js')
 const lihuo = require('../tools/lihuo/index.js')
 const path = require('path')
 const winax = require('../tools/lihuo/winax')
+const { getScreen } = require('../touping.js')
 class Shimen extends Mhxy {
     async start() {
         const ret = lihuo.reg('pengjianming07da20d304e552776cf6a1c9f7eebb5a')
@@ -12,33 +13,7 @@ class Shimen extends Mhxy {
         // setInterval(async () => {
         //     const screen = await getScreen(global.hwnd)
         //     console.log(screen);
-        // }, 1000);
-        const aaa = lihuo.dll.Yolov8SetModelPath(path.join(__dirname, 'model'))
-        const bbb = lihuo.dll.Yolov8SetParam(1, 'model.lh', '', 1, -1);
-        const ccc = lihuo.dll.Yolov8InitModel('1')
-        const ret1 = new winax.Variant(-1, 'byref')
-        const ret2 = new winax.Variant(-1, 'byref')
-        const ddd = lihuo.dll.Yolov8DetectFile('1', path.join(__dirname, '../resource/cache/ggg.png'), 640, 640, 0.5, 1, ret1, ret2)
-        console.log(ddd, ret1.toString(), ret2.toString(), "===");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // }, 1000)
 
 
 

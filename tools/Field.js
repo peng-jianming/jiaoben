@@ -1,11 +1,13 @@
 const Jimp = require('jimp')
 const { getScreen } = require('../touping.js')
 const { opencv找图, 获取图片宽高, 随机坐标, 随机延时, ADB左键点击, 裁剪图片 } = require('./tools')
+const lh = require('./lihuo')
 class Field {
-    constructor({ 方式, 图片路径, 标识, 相似度, 查找区域 }) {
+    constructor({ 方式, 图片路径, 标识, 相似度, 查找区域, 分类名 }) {
         this.方式 = 方式;
         this.图片路径 = 图片路径;
         this.标识 = 标识;
+        this.分类名 = 分类名;
         this.相似度 = 相似度 || 0.9
         this.查找区域 = 查找区域 || { x: 0, y: 0, width: 0, height: 0 }
     }
@@ -31,11 +33,27 @@ class Field {
                 return null
             }
         }
+
+        if (this.方式 == 'yolo') {
+            const result = await lh.yolo(url);
+            if (result) {
+                const res = result.find(item => item.label == this.分类名 && item.sim >= this.相似度)
+                if (res) {
+                    global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+                    return {
+                        x: this.查找区域.x + res.x,
+                        y: this.查找区域.y + res.y,
+                        w: res.w,
+                        h: res.h
+                    }
+                }
+            }
+            return null
+        }
     }
 
     async 查找并点击({ x, y, w, h, isOffset, startMs, endMs } = {}) {
         const point = await this.查找();
-        console.log(point,x, y, w, h, isOffset, "11111111", this.标识);
         if (point) {
             // 是否是偏移点击
             if (isOffset) {
@@ -46,7 +64,6 @@ class Field {
                 }
                 // x,y,w,h都传入,则随机点击x,y,w,h范围内的坐标
                 if (w && h) {
-                    console.log(point,x, y, w, h, isOffset, "222222", this.标识);
                     const result = 随机坐标(point.x + x, point.y + y, w, h)
                     await ADB左键点击(result)
                 }
@@ -64,8 +81,13 @@ class Field {
 
                 // 没有传入x,y,w,h,则根据查询到的结果进行范围点击
                 if (!x && !y && !w && !h) {
-                    const { width, height } = await 获取图片宽高(this.图片路径)
-                    const result = 随机坐标(point.x, point.y, width, height)
+                    let result
+                    if (point.w && point.h) {
+                        result = 随机坐标(point.x, point.y, point.w, point.h)
+                    } else {
+                        const { width, height } = await 获取图片宽高(this.图片路径)
+                        result = 随机坐标(point.x, point.y, width, height)
+                    }
                     await ADB左键点击(result)
                 }
             }
