@@ -43,24 +43,6 @@ const 主界面_师门文字 = new Field({
     图片路径: path.resolve(__dirname, `shimenwenzi.png`)
 });
 
-const 主界面_师门集物 = new Field({
-    标识: '主界面_师门集物',
-    方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `shimenjiwu.png`)
-});
-
-const 主界面_查看门派关系按钮 = new Field({
-    标识: '主界面_查看门派关系按钮',
-    方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `chakanmenpaiguanxi.png`)
-});
-
-const 对话_师门任务按钮 = new Field({
-    标识: '对话_师门任务按钮',
-    方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `duihua_shimenrenwu.png`)
-});
-
 const 弹框_购买 = new Field({
     标识: '弹框_购买',
     方式: 'opencv找图',
@@ -73,20 +55,11 @@ const 摆摊弹框_购买 = new Field({
     图片路径: path.resolve(__dirname, `baitangoumai.png`)
 });
 
-const 对话_师门寻趣按钮 = new Field({
-    标识: '对话_师门寻趣按钮',
+
+const 师门_任务完成弹框 = new Field({
+    标识: '师门_任务完成弹框',
     方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `shimenxunqu.png`)
-});
-const 师门_师门历练按钮 = new Field({
-    标识: '师门_师门历练按钮',
-    方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `shimenlilian.png`)
-});
-const 师门_首席请按钮 = new Field({
-    标识: '师门_首席请按钮',
-    方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `shouxiqing.png`)
+    图片路径: path.resolve(__dirname, `shimenwancheng.png`)
 });
 
 module.exports = {
@@ -97,13 +70,8 @@ module.exports = {
     师门界面选择按钮,
     师门界面去完成按钮,
     主界面_师门文字,
-    主界面_师门集物,
-    主界面_查看门派关系按钮,
-    对话_师门任务按钮,
     弹框_购买,
     摆摊弹框_购买,
-    对话_师门寻趣按钮,
-    师门_师门历练按钮,
-    师门_首席请按钮
+    师门_任务完成弹框
 };
 

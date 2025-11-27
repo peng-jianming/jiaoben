@@ -39,10 +39,10 @@ class Field {
             if (result) {
                 const res = result.find(item => item.label == this.分类名 && item.sim >= this.相似度)
                 if (res) {
-                    global.changeProp('action', `找到${this.标识}, 坐标: ${point.x}, ${point.y}`)
+                    global.changeProp('action', `找到${this.标识}, 坐标: ${res.x}, ${res.y}`)
                     return {
-                        x: this.查找区域.x + res.x,
-                        y: this.查找区域.y + res.y,
+                        x: this.查找区域.x + Number(res.x),
+                        y: this.查找区域.y + Number(res.y),
                         w: res.w,
                         h: res.h
                     }
@@ -52,7 +52,7 @@ class Field {
         }
     }
 
-    async 查找并点击({ x, y, w, h, isOffset, startMs, endMs } = {}) {
+    async 查找并点击({ x, y, w, h, isOffset, startMs, endMs } = {}) {        
         const point = await this.查找();
         if (point) {
             // 是否是偏移点击
@@ -65,6 +65,7 @@ class Field {
                 // x,y,w,h都传入,则随机点击x,y,w,h范围内的坐标
                 if (w && h) {
                     const result = 随机坐标(point.x + x, point.y + y, w, h)
+                    
                     await ADB左键点击(result)
                 }
             } else {

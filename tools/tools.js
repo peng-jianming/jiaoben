@@ -154,6 +154,72 @@ const ADB左键点击 = async (result) => {
     }
 }
 
+const 随机点击 = async (x, y, w, h) => {
+    await ADB左键点击(随机坐标(x, y, w, h))
+}
+
+
+
+const 滑动方向 = {
+    向上: 'UP',
+    向下: 'DOWN',
+    向左: 'LEFT',
+    向右: 'RIGHT'
+}
+
+/**
+ * 获取拟人化滑动坐标
+ * @param {Object} startRegion 起始区域 {x, y, width, height}
+ * @param {Object} endRegion 结束区域 {x, y, width, height}
+ * @param {string} direction 滑动方向 (使用 滑动方向 枚举)
+ * @returns {Object} { start: {x,y}, end: {x,y} }
+ */
+// 注意上下左右由起始区域和结束区域控制,这里的direction只控制精度,哪边需要间隔小,例如上下,那么左右就间隔小
+const 获取滑动坐标 = (startRegion, endRegion, direction) => {
+    // 1. 在起始区域生成随机起始点
+    const startP = 随机坐标(startRegion.x, startRegion.y, startRegion.width, startRegion.height);
+    
+    let endP = { x: 0, y: 0 };
+    const maxDeviation = 30; // 非主方向的最大偏移量(像素)，模拟手指滑动不完全直
+
+    // 辅助函数：限制数值在范围内
+    const clamp = (val, min, max) => Math.max(min, Math.min(val, max));
+
+    if (direction === 滑动方向.向上 || direction === 滑动方向.向下) {
+        // === 上下滑动 ===
+        // 规则：上下间隔大(由区域位置决定)，左右间隔小(需要计算)
+        
+        // 计算结束点X：在起始点X基础上微调，确保"左右间隔小"
+        let targetX = startP.x + 随机区间位置(-maxDeviation, maxDeviation);
+        
+        // 确保结束点X在 endRegion 的宽范围内
+        targetX = clamp(targetX, endRegion.x, endRegion.x + endRegion.width);
+        
+        endP.x = targetX;
+        // 结束点Y在 endRegion 高度范围内随机
+        endP.y = 随机区间位置(endRegion.y, endRegion.y + endRegion.height);
+        
+    } else {
+        // === 左右滑动 ===
+        // 规则：左右间隔大(由区域位置决定)，上下间隔小(需要计算)
+        
+        // 计算结束点Y：在起始点Y基础上微调，确保"上下间隔小"
+        let targetY = startP.y + 随机区间位置(-maxDeviation, maxDeviation);
+        
+        // 确保结束点Y在 endRegion 的高范围内
+        targetY = clamp(targetY, endRegion.y, endRegion.y + endRegion.height);
+        
+        endP.y = targetY;
+        // 结束点X在 endRegion 宽度范围内随机
+        endP.x = 随机区间位置(endRegion.x, endRegion.x + endRegion.width);
+    }
+
+    return { start: startP, end: endP };
+}
+
+
+
+
 
 const 百分之十随机用户操作 = async () => {
     if (Math.random() < 0.1) {
@@ -309,5 +375,7 @@ module.exports = {
     ADB左键点击,
     百分之十随机用户操作,
     opencv找图,
-    裁剪图片
+    裁剪图片,
+    随机点击,
+    获取滑动坐标
 }

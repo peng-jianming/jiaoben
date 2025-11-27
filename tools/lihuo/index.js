@@ -17,6 +17,8 @@ function getLH() {
 
 const lh = getLH()
 
+let isSetYoloPath = false
+
 module.exports = {
     dll: lh,
     ver() {
@@ -101,23 +103,29 @@ module.exports = {
 
     },
     yolo(PicFilePath) {
-        const aaa = lihuo.dll.Yolov8SetModelPath(path.join(__dirname, 'model'))
-        if (aaa != 1) {
-            return null
+        if (!isSetYoloPath) {
+            const aaa = lh.Yolov8SetModelPath(path.join(__dirname, '../../resource/yolo/model'))
+            if (aaa != 1) {
+                return null
+            }
+            const bbb = lh.Yolov8SetParam(1, 'model.lh', '', 1, -1);
+            if (bbb != 1) {
+                return null
+            }
+            const ccc = lh.Yolov8InitModel('1')
+            if (ccc != 1) {
+                return null
+            }
+
+            isSetYoloPath = true
         }
-        const bbb = lihuo.dll.Yolov8SetParam(1, 'model.lh', '', 1, -1);
-        if (bbb != 1) {
-            return null
-        }
-        const ccc = lihuo.dll.Yolov8InitModel('1')
-        if (ccc != 1) {
-            return null
-        }
+
+
         const ret1 = new winax.Variant(-1, 'byref')
         const ret2 = new winax.Variant(-1, 'byref')
-        const ret = lihuo.dll.Yolov8DetectFile('1', PicFilePath, 640, 640, 0.5, 1, ret1, ret2)
+        const ret = lh.Yolov8DetectFile('1', PicFilePath, 640, 640, 0.5, 1, ret1, ret2)
         if (ret > -1) {
-            ret1.toString().split('|').filter(item => !!item).map(item => {
+            return ret1.toString().split('|').filter(item => !!item).map(item => {
                 const arr = item.split(',');
                 return {
                     id: arr[0],
