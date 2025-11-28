@@ -19,31 +19,31 @@ async function safeReadImage(imagePath, maxRetries = 3, retryDelay = 100) {
     if (!fileReadLocks.has(imagePath)) {
         fileReadLocks.set(imagePath, Promise.resolve());
     }
-    
+
     // 等待之前的操作完成
     const previousLock = fileReadLocks.get(imagePath);
     await previousLock;
-    
+
     // 创建新的锁 Promise
     let resolveLock;
     const lockPromise = new Promise(resolve => {
         resolveLock = resolve;
     });
     fileReadLocks.set(imagePath, lockPromise);
-    
+
     try {
         // 先复制文件到临时位置，避免并发读取冲突
         const tempPath = imagePath + '.tmp.' + Date.now() + '.' + Math.random().toString(36).substr(2, 9);
-        
+
         let retries = 0;
         while (retries < maxRetries) {
             try {
                 // 复制文件到临时位置
                 fs.copyFileSync(imagePath, tempPath);
-                
+
                 // 从临时文件读取
                 const image = await Jimp.Jimp.read(tempPath);
-                
+
                 // 清理临时文件
                 try {
                     if (fs.existsSync(tempPath)) {
@@ -52,7 +52,7 @@ async function safeReadImage(imagePath, maxRetries = 3, retryDelay = 100) {
                 } catch (e) {
                     // 忽略清理错误
                 }
-                
+
                 return image;
             } catch (error) {
                 retries++;
@@ -154,11 +154,10 @@ const ADB左键点击 = async (result) => {
     }
 }
 
-const 随机点击 = async (x, y, w, h) => {
+
+const 随机ADB左键点击 = async (x, y, w, h) => {
     await ADB左键点击(随机坐标(x, y, w, h))
 }
-
-
 
 const 滑动方向 = {
     向上: 'UP',
@@ -178,7 +177,7 @@ const 滑动方向 = {
 const 获取滑动坐标 = (startRegion, endRegion, direction) => {
     // 1. 在起始区域生成随机起始点
     const startP = 随机坐标(startRegion.x, startRegion.y, startRegion.width, startRegion.height);
-    
+
     let endP = { x: 0, y: 0 };
     const maxDeviation = 30; // 非主方向的最大偏移量(像素)，模拟手指滑动不完全直
 
@@ -188,27 +187,27 @@ const 获取滑动坐标 = (startRegion, endRegion, direction) => {
     if (direction === 滑动方向.向上 || direction === 滑动方向.向下) {
         // === 上下滑动 ===
         // 规则：上下间隔大(由区域位置决定)，左右间隔小(需要计算)
-        
+
         // 计算结束点X：在起始点X基础上微调，确保"左右间隔小"
         let targetX = startP.x + 随机区间位置(-maxDeviation, maxDeviation);
-        
+
         // 确保结束点X在 endRegion 的宽范围内
         targetX = clamp(targetX, endRegion.x, endRegion.x + endRegion.width);
-        
+
         endP.x = targetX;
         // 结束点Y在 endRegion 高度范围内随机
         endP.y = 随机区间位置(endRegion.y, endRegion.y + endRegion.height);
-        
+
     } else {
         // === 左右滑动 ===
         // 规则：左右间隔大(由区域位置决定)，上下间隔小(需要计算)
-        
+
         // 计算结束点Y：在起始点Y基础上微调，确保"上下间隔小"
         let targetY = startP.y + 随机区间位置(-maxDeviation, maxDeviation);
-        
+
         // 确保结束点Y在 endRegion 的高范围内
         targetY = clamp(targetY, endRegion.y, endRegion.y + endRegion.height);
-        
+
         endP.y = targetY;
         // 结束点X在 endRegion 宽度范围内随机
         endP.x = 随机区间位置(endRegion.x, endRegion.x + endRegion.width);
@@ -218,8 +217,133 @@ const 获取滑动坐标 = (startRegion, endRegion, direction) => {
 }
 
 
+const ADB滑动 = async (result1, result2) => {
+    if (result1 && result2) {
+        function 获取贝塞尔曲线(qx, qy, zx, zy) {
+            function 三次贝塞尔曲线计算(cp, t) {
+                // X轴计算
+                let cx = 3.0 * (cp[1].x - cp[0].x);
+                let bx = 3.0 * (cp[2].x - cp[1].x) - cx;
+                let ax = cp[3].x - cp[0].x - cx - bx;
+
+                // Y轴计算
+                let cy = 3.0 * (cp[1].y - cp[0].y);
+                let by = 3.0 * (cp[2].y - cp[1].y) - cy;
+                let ay = cp[3].y - cp[0].y - cy - by;
+
+                // 三次方计算
+                let tSquared = t * t;
+                let tCubed = tSquared * t;
+
+                return {
+                    "x": (ax * tCubed) + (bx * tSquared) + (cx * t) + cp[0].x,
+                    "y": (ay * tCubed) + (by * tSquared) + (cy * t) + cp[0].y
+                };
+            }
+
+            var arr = []
+            // 生成4个控制点（起点、两个随机控制点、终点）
+            var controlPoints = [
+                { "x": qx, "y": qy },  // 起点
+                {
+                    "x": qx + (Math.random() * 240 - 120),
+                    "y": qy + Math.random() * 100
+                },
+                {
+                    "x": zx + (Math.random() * 240 - 120),
+                    "y": zy + (Math.random() * 200 - 100)
+                },
+                { "x": zx, "y": zy }  // 终点
+            ];
+
+            // 生成贝塞尔曲线路径点 - 增大步长使滑动更连贯
+            for (let t = 0; t <= 1; t += 0.15) {
+                let point = 三次贝塞尔曲线计算(controlPoints, t);
+                arr.push([parseInt(point.x), parseInt(point.y)]);
+            }
+
+            return arr;
+        }
+
+        // 生成人类化的延时模式
+        function 生成人类延时模式(点数) {
+            const 模式 = [];
+            const 总时间 = 300 + Math.random() * 200; // 300-500ms总时间（更快的滑动）
+            const 基础间隔 = 总时间 / 点数;
+
+            // 人类滑动特点：开始慢，中间快，结束前慢
+            for (let i = 0; i < 点数; i++) {
+                let 进度 = i / 点数;
+                let 延时倍数;
+
+                if (进度 < 0.2) {
+                    // 开始阶段：稍慢
+                    延时倍数 = 0.8 + Math.random() * 0.2;
+                } else if (进度 > 0.8) {
+                    // 结束阶段：变慢
+                    延时倍数 = 1.0 + Math.random() * 0.3;
+                } else {
+                    // 中间阶段：快速且变化
+                    延时倍数 = 0.4 + Math.random() * 0.3;
+                }
+
+                // 添加随机波动
+                const 随机波动 = (Math.random() - 0.5) * 0.2;
+                延时倍数 += 随机波动;
+
+                // 确保最小值
+                延时倍数 = Math.max(0.25, 延时倍数);
+
+                模式.push(基础间隔 * 延时倍数);
+            }
+
+            return 模式;
+        }
+
+        const arr = 获取贝塞尔曲线(result1.x, result1.y, result2.x, result2.y);
+
+        try {
+            // 生成延时模式
+            const 延时模式 = 生成人类延时模式(arr.length - 1);
+
+            // 使用ADB motionevent命令模拟完整滑动轨迹
+            // 按下起点
+            await 调用ADB(global.hwnd, `input motionevent DOWN ${arr[0][0]} ${arr[0][1]}`);
+
+            // 初始按下后的小延迟
+            await new Promise(resolve => setTimeout(resolve, 10 + Math.random() * 10));
+
+            // 移动到各个中间点 - 不等待ADB响应，连续发送命令使滑动更连贯
+            for (let i = 1; i < arr.length - 1; i++) {
+                const point = arr[i];
+                await 调用ADB(global.hwnd, `input motionevent MOVE ${point[0]} ${point[1]}`);
+                await new Promise(resolve => setTimeout(resolve, Math.max(5, 延时模式[i])));
+            }
+
+            // 移动到终点
+            const lastPoint = arr[arr.length - 1];
+            await 调用ADB(global.hwnd, `input motionevent MOVE ${lastPoint[0]} ${lastPoint[1]}`);
+
+            // 抬起前的微小停顿
+            await new Promise(resolve => setTimeout(resolve, 20 + Math.random() * 20));
+
+            // 在终点抬起
+            await 调用ADB(global.hwnd, `input motionevent UP ${lastPoint[0]} ${lastPoint[1]}`);
+
+        } catch (error) {
+            console.log('ADB滑动过程中出错:', error);
+        }
+
+    } else {
+        console.log('左键点击坐标为空');
+    }
+}
 
 
+const 随机ADB滑动 = async (startRegion, endRegion, direction) => {
+    const result = 获取滑动坐标(startRegion, endRegion, direction)
+    await ADB滑动(result.start, result.end)
+}
 
 const 百分之十随机用户操作 = async () => {
     if (Math.random() < 0.1) {
@@ -376,6 +500,8 @@ module.exports = {
     百分之十随机用户操作,
     opencv找图,
     裁剪图片,
-    随机点击,
-    获取滑动坐标
+    获取滑动坐标,
+    ADB滑动,
+    随机ADB滑动,
+    随机ADB左键点击
 }
