@@ -4,7 +4,7 @@ const Field = require('../../tools/Field.js');
 const 活动界面师门任务 = new Field({
     标识: '活动界面师门任务',
     方式: 'opencv找图',
-    图片路径: path.resolve(__dirname, `shimenrenwu.png`),
+    图片路径: path.resolve(__dirname, `shimenrenwu-weiwancheng.png`),
 });
 
 const 活动界面参加按钮 = new Field({

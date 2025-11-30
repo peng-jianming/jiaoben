@@ -31,11 +31,18 @@ const 活动界面 = new Field({
     图片路径: path.resolve(__dirname, `huodongjiemian.png`)
 });
 
+const 创建队伍 = new Field({
+    标识: '创建队伍',
+    方式: 'opencv找图',
+    图片路径: path.resolve(__dirname, `chuangjianduiwu.png`)
+});
+
 module.exports = {
     跳过,
     使用,
     上交,
     主界面活动按钮,
-    活动界面
+    活动界面,
+    创建队伍
 };
 

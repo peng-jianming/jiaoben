@@ -17,6 +17,9 @@ function getLH() {
 
 const lh = getLH()
 
+const ret = lh.reg('pengjianming07da20d304e552776cf6a1c9f7eebb5a')
+console.log('注册结果:', ret);
+
 let isSetYoloPath = false
 
 module.exports = {

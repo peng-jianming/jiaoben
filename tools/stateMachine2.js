@@ -118,7 +118,7 @@ module.exports = class StateMachine {
         return this;
     }
 
-    start(initState, tick = (Math.floor(Math.random() * 501) + 1000)) {
+    start(initState, tick = (Math.floor(Math.random() * 501) + 0)) {
         // 如果已经有 Promise 在等待，直接返回它
         if (this._startPromise) {
             return this._startPromise;
